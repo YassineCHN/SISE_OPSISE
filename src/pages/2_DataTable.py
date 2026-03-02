@@ -45,8 +45,19 @@ all_cols = list(display_df.columns)
 selected_cols = st.multiselect("Colonnes à afficher", all_cols, default=all_cols)
 display_df = display_df[selected_cols]
 
-st.caption(f"{len(display_df):,} lignes affichées")
-st.dataframe(display_df, use_container_width=True, height=600)
+PAGE_SIZE = 1000
+total_rows = len(display_df)
+total_pages = max(1, -(-total_rows // PAGE_SIZE))  # division plafond
+
+page = st.number_input(
+    "Page", min_value=1, max_value=total_pages, value=1, step=1
+)
+
+start = (page - 1) * PAGE_SIZE
+end = start + PAGE_SIZE
+st.dataframe(display_df.iloc[start:end], use_container_width=True, height=600)
+
+st.caption(f"Page {page}/{total_pages} · {total_rows:,} lignes au total")
 
 # ── Export CSV ────────────────────────────────────────────────────────────
 csv = display_df.to_csv(index=False).encode("utf-8")
