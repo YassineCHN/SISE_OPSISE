@@ -8,5 +8,5 @@ dependencies = [
     "ipaddress>=1.0.23",
     "numpy>=2.2.6",
     "pandas>=2.3.3",
-    "pyarrow>=23.0.1",
+    "pyarrow==14.0.1",
 ]
