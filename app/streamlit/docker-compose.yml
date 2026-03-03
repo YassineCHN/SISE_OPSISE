@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  firewall-analytics:
+    build: .
+    container_name: firewall_analytics
+    ports:
+      - "8501:8501"
+    volumes:
+      # Montez votre fichier parquet ici — il sera chargé automatiquement au démarrage
+      - ./data/processed/log_clean.parquet:/app/data/processed/log_clean.parquet:ro
+    environment:
+      # Optionnel : pré-remplir la clé API Mistral
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+    restart: unless-stopped
