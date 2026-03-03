@@ -6,7 +6,7 @@ from modules.preprocessing import (
     filter_by_action,
     filter_by_port_range,
 )
-from config import PORT_RANGES
+from app_config import PORT_RANGES
 
 
 def render_sidebar_filters(df: pd.DataFrame) -> tuple:

@@ -11,6 +11,7 @@ import time
 from datetime import datetime
 
 from modules.preprocessing import load_data
+from components.top_nav import render_top_nav
 from utils import (
     port_label,
     is_public,
@@ -27,6 +28,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+render_top_nav("map")
 
 # ═══════════════════════════════════════════════════════════════
 # CSS — Thème clair, coloré, premium

@@ -1,7 +1,7 @@
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-from config import ACTION_COLORS, COLOR_SEQUENCE
+from app_config import COLOR_SEQUENCE
 
 
 def bar_chart(
