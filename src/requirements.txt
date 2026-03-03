@@ -4,3 +4,7 @@ plotly
 pyarrow
 pydeck
 requests
+numpy
+scikit-learn
+scipy
+python-dotenv

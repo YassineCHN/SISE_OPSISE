@@ -6,6 +6,7 @@ import math
 import time
 import json
 import os
+from pathlib import Path
 
 import requests
 import streamlit as st
@@ -14,10 +15,12 @@ from dotenv import load_dotenv
 # ─────────────────────────────────────────────
 # Chargement des variables d'environnement
 # ─────────────────────────────────────────────
-load_dotenv()
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=ENV_PATH)
 
-MISTRAL_API_KEY_ENV = os.getenv("MISTRAL_API_KEY", "")
-MISTRAL_MODEL_ENV   = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
+# Normalize values to avoid false "key detected" due to quotes/spaces.
+MISTRAL_API_KEY_ENV = os.getenv("MISTRAL_API_KEY", "").strip().strip('"').strip("'")
+MISTRAL_MODEL_ENV = os.getenv("MISTRAL_MODEL", "mistral-small-latest").strip()
 
 # ─────────────────────────────────────────────
 # Mapping port → nom de service

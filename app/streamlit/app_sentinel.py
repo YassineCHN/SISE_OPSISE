@@ -232,14 +232,43 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🤖 Mistral AI")
     if MISTRAL_API_KEY_ENV:
-        st.success("✅ Clé .env détectée")
+        st.success("✅ Clé .env détectée (non validée)")
     else:
         st.info("💡 Sans clé : rapports de secours activés")
     mistral_key   = st.text_input("Clé API Mistral", value=MISTRAL_API_KEY_ENV, type="password",
                                    help="Laissez vide pour utiliser les rapports de secours intégrés")
+    mistral_key = mistral_key.strip().strip('"').strip("'")
     _models = ["mistral-small-latest", "mistral-medium-latest", "mistral-large-latest"]
     _def    = _models.index(MISTRAL_MODEL_ENV) if MISTRAL_MODEL_ENV in _models else 0
     mistral_model = st.selectbox("Modèle", _models, index=_def)
+    if st.button("Tester la cle API", use_container_width=True):
+        if not mistral_key:
+            st.warning("?? Aucune cl? fournie.")
+        else:
+            try:
+                resp = requests.post(
+                    "https://api.mistral.ai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {mistral_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": mistral_model,
+                        "messages": [{"role": "user", "content": "ping"}],
+                        "max_tokens": 5,
+                        "temperature": 0,
+                        "stream": False,
+                    },
+                    timeout=20,
+                )
+                if resp.status_code == 200:
+                    st.success("? Cl? API valide.")
+                elif resp.status_code == 401:
+                    st.error("? Cl? API invalide (401).")
+                else:
+                    st.error(f"? Test API ?chou? (HTTP {resp.status_code}).")
+            except requests.RequestException as e:
+                st.error(f"? Impossible de joindre l'API Mistral: {e}")
     st.caption("Sans clé : fallback templates activés automatiquement")
 
 # ═══════════════════════════════════════════════════════════════

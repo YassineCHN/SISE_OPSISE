@@ -3,5 +3,5 @@ __pycache__/
 **/*.pyc
 .env
 .env.*
-
+ca.pem
 .claude
