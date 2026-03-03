@@ -30,6 +30,7 @@ from sentinel_utils import (
 from sentinel_llm_analyst import generate_analysis
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
+from components.ui import neon_metric
 
 # ═══════════════════════════════════════════════════════════════
 # PAGE CONFIG
@@ -146,52 +147,52 @@ st.markdown(f"""
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("### Configuration")
+    st.markdown("### ⚙️ Configuration")
     st.markdown("---")
-    uploaded = st.file_uploader("Charger un CSV", type=["csv"])
-    st.caption("Par defaut : df_1000.csv")
-    st.markdown("---")
-
-    filter_action = st.multiselect("Action", ["DENY", "PERMIT"], default=["DENY", "PERMIT"])
-    filter_protocol = st.multiselect("Protocole", ["TCP", "UDP", "ICMP"], default=["TCP", "UDP", "ICMP"])
-    max_rows = st.slider("Flux a analyser", 50, 1000, 200, step=50)
+    uploaded = st.file_uploader("📂 Charger un CSV", type=["csv"])
+    st.caption("Par défaut : **df_1000.csv**")
     st.markdown("---")
 
-    show_arrows = st.checkbox("Fleches directionnelles", value=True)
-    show_trips = st.checkbox("Particules animees", value=False)
-    map_style = st.selectbox("Style de carte", ["Dark Matter (sombre)", "Voyager (coloree)", "Positron (claire)"])
-    map_pitch = st.slider("Inclinaison carte", 0, 55, 30)
-    arc_width = st.slider("Epaisseur arcs", 1, 6, 2)
-    arrow_size = st.slider("Taille fleches", 10, 35, 18)
+    filter_action = st.multiselect("🎯 Action", ["DENY", "PERMIT"], default=["DENY", "PERMIT"])
+    filter_protocol = st.multiselect("📡 Protocole", ["TCP", "UDP", "ICMP"], default=["TCP", "UDP", "ICMP"])
+    max_rows = st.slider("🔢 Flux à analyser", 50, 1000, 200, step=50)
     st.markdown("---")
 
-    if st.button("Reinitialiser tout"):
+    show_arrows = st.checkbox("▶ Flèches directionnelles", value=True)
+    show_trips = st.checkbox("✨ Particules animées", value=False)
+    map_style = st.selectbox("🗺 Style de carte", ["Dark Matter (sombre)", "Voyager (colorée)", "Positron (claire)"])
+    map_pitch = st.slider("🌍 Inclinaison carte", 0, 55, 30)
+    arc_width = st.slider("⚡ Épaisseur arcs", 1, 6, 2)
+    arrow_size = st.slider("▶ Taille flèches", 10, 35, 18)
+    st.markdown("---")
+
+    if st.button("🗑 Réinitialiser tout"):
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### Mistral AI")
+    st.markdown("### 🤖 Mistral AI")
     if MISTRAL_API_KEY_ENV:
-        st.success("Cle .env detectee")
+        st.success("✅ Clé .env détectée")
     else:
-        st.info("Sans cle: rapports de secours actives")
+        st.info("💡 Sans clé : rapports de secours activés")
 
     mistral_key = st.text_input(
-        "Cle API Mistral",
+        "🔑 Clé API Mistral",
         value=MISTRAL_API_KEY_ENV,
         type="password",
-        help="Laissez vide pour utiliser les rapports de secours integres",
+        help="Laissez vide pour utiliser les rapports de secours intégrés",
     )
     mistral_key = mistral_key.strip().strip('"').strip("'")
 
     _models = ["mistral-small-latest", "mistral-medium-latest", "mistral-large-latest"]
     _def = _models.index(MISTRAL_MODEL_ENV) if MISTRAL_MODEL_ENV in _models else 0
-    mistral_model = st.selectbox("Modele", _models, index=_def)
+    mistral_model = st.selectbox("🧠 Modèle", _models, index=_def)
 
-    if st.button("Tester la cle API", use_container_width=True):
+    if st.button("🔍 Tester la clé API", use_container_width=True):
         if not mistral_key:
-            st.warning("Aucune cle fournie.")
+            st.warning("⚠️ Aucune clé fournie.")
         else:
             try:
                 resp = requests.post(
@@ -210,15 +211,15 @@ with st.sidebar:
                     timeout=20,
                 )
                 if resp.status_code == 200:
-                    st.success("Cle API valide.")
+                    st.success("✅ Clé API valide.")
                 elif resp.status_code == 401:
-                    st.error("Cle API invalide (401).")
+                    st.error("❌ Clé API invalide (401).")
                 else:
-                    st.error(f"Test API echoue (HTTP {resp.status_code}).")
+                    st.error(f"❌ Test API échoué (HTTP {resp.status_code}).")
             except requests.RequestException as e:
-                st.error(f"Impossible de joindre l'API Mistral: {e}")
+                st.error(f"❌ Impossible de joindre l'API Mistral : {e}")
 
-    st.caption("Sans cle: fallback templates actives automatiquement")
+    st.caption("Sans clé : fallback templates activés automatiquement")
 
 @st.cache_data(show_spinner=False)
 def load_csv(path: str) -> pd.DataFrame:
@@ -247,12 +248,17 @@ df = df_filt.head(max_rows).reset_index(drop=True)
 # ═══════════════════════════════════════════════════════════════
 # KPI STRIP
 # ═══════════════════════════════════════════════════════════════
-k1,k2,k3,k4,k5 = st.columns(5)
-k1.metric("📦 Flux total",      f"{len(df_raw):,}")
-k2.metric("🚫 DENY",            f"{int((df_raw['action']=='DENY').sum()):,}")
-k3.metric("✅ PERMIT",          f"{int((df_raw['action']=='PERMIT').sum()):,}")
-k4.metric("🖥 Sources uniques", f"{df_raw['ip_src'].nunique():,}")
-k5.metric("🎯 Destinations",    f"{df_raw['ip_dst'].nunique():,}")
+k1, k2, k3, k4, k5 = st.columns(5)
+with k1:
+    neon_metric("📦 Flux total",        f"{len(df_raw):,}")
+with k2:
+    neon_metric("🚫 DENY",              f"{int((df_raw['action']=='DENY').sum()):,}",  color="var(--accent2)")
+with k3:
+    neon_metric("✅ PERMIT",            f"{int((df_raw['action']=='PERMIT').sum()):,}", color="var(--accent4)")
+with k4:
+    neon_metric("🖥 Sources uniques",   f"{df_raw['ip_src'].nunique():,}",              color="var(--accent3)")
+with k5:
+    neon_metric("🎯 Destinations",      f"{df_raw['ip_dst'].nunique():,}",              color="var(--accent3)")
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════

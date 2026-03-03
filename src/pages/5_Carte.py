@@ -13,6 +13,7 @@ from datetime import datetime
 from modules.preprocessing import load_data
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
+from components.ui import neon_metric
 from utils import (
     port_label,
     is_public,
@@ -167,11 +168,16 @@ df = df_raw.head(max_rows).reset_index(drop=True)
 # KPI STRIP
 # ═══════════════════════════════════════════════════════════════
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("📦 Flux total", f"{len(df):,}")
-k2.metric("🚫 DENY", f"{int((df['action']=='DENY').sum()):,}")
-k3.metric("✅ PERMIT", f"{int((df['action']=='PERMIT').sum()):,}")
-k4.metric("🖥 Sources uniques", f"{df['ip_src'].nunique():,}")
-k5.metric("🎯 Destinations", f"{df['ip_dst'].nunique():,}")
+with k1:
+    neon_metric("📦 Flux total",        f"{len(df):,}")
+with k2:
+    neon_metric("🚫 DENY",             f"{int((df['action']=='DENY').sum()):,}",  color="var(--accent2)")
+with k3:
+    neon_metric("✅ PERMIT",           f"{int((df['action']=='PERMIT').sum()):,}", color="var(--accent4)")
+with k4:
+    neon_metric("🖥 Sources uniques",  f"{df['ip_src'].nunique():,}",              color="var(--accent3)")
+with k5:
+    neon_metric("🎯 Destinations",     f"{df['ip_dst'].nunique():,}",              color="var(--accent3)")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
