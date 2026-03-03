@@ -1,6 +1,7 @@
 import streamlit as st
 
 from components.top_nav import render_top_nav
+from components.sentinel_theme import apply_sentinel_theme
 from app_config import APP_ICON, APP_TITLE, LAYOUT
 from modules.preprocessing import load_data
 from modules.stats import blocked_ratio, unique_counts
@@ -12,6 +13,7 @@ st.set_page_config(
 )
 
 render_top_nav("home")
+apply_sentinel_theme()
 
 
 @st.cache_data

@@ -7,6 +7,7 @@ import plotly.express as px
 import streamlit as st
 
 from components.top_nav import render_top_nav
+from components.sentinel_theme import apply_sentinel_theme
 from app_config import ACTION_COLORS, COLUMN_LABELS, TOP_N_DEFAULT
 from modules.charts import area_chart, bar_chart, heatmap, pie_chart
 from modules.components.filters import render_sidebar_filters
@@ -30,6 +31,7 @@ st.set_page_config(
 )
 
 render_top_nav("viz")
+apply_sentinel_theme()
 
 
 @st.cache_data
