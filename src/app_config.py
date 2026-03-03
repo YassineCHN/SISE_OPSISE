@@ -2,8 +2,8 @@ from pathlib import Path
 
 DATA_PATH = Path("data/processed/log_clean.parquet")
 
-APP_TITLE = "SISE - Analyse des logs Firewall"
-APP_ICON = "F"
+APP_TITLE = "SISE — Analyse des logs Firewall"
+APP_ICON = "🛡️"
 LAYOUT = "wide"
 
 COLUMN_LABELS = {
