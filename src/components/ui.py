@@ -2,9 +2,30 @@
 Composants UI réutilisables — Sentinel Theme.
 
 Usage:
-    from components.ui import section_hd, fw_card, stat_block, kpi_chip, badge
+    from components.ui import neon_metric, section_hd, fw_card, stat_block, kpi_chip, badge
 """
 import streamlit as st
+
+
+# ── Métriques neon ───────────────────────────────────────────────────────────
+
+def neon_metric(label: str, value: str, color: str = "var(--accent)") -> None:
+    """
+    Card métrique avec ligne neon en haut (border-top inline, fiable sur toutes versions Streamlit).
+
+    color : couleur CSS — ex. "var(--accent)", "var(--accent2)", "#00ff9d"
+    """
+    st.markdown(
+        f"""<div style="background:var(--bg2);border:1px solid var(--border);
+                border-top:2px solid {color};border-radius:6px;
+                padding:1rem 1.2rem;box-shadow:0 0 20px rgba(0,212,255,0.06);">
+          <div style="font-size:0.6rem;color:var(--text-dim);letter-spacing:2px;
+                      text-transform:uppercase;margin-bottom:6px;">{label}</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;
+                      color:var(--text-hi);line-height:1;">{value}</div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
 
 # ── En-têtes de section ──────────────────────────────────────────────────────

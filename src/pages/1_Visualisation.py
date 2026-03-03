@@ -8,6 +8,7 @@ import streamlit as st
 
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
+from components.ui import neon_metric
 from app_config import ACTION_COLORS, COLUMN_LABELS, TOP_N_DEFAULT
 from modules.charts import area_chart, bar_chart, heatmap, pie_chart
 from modules.components.filters import render_sidebar_filters
@@ -51,11 +52,16 @@ if df.empty:
 
 ucounts = unique_counts(df)
 c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("📦 Flux total",        f"{len(df):,}")
-c2.metric("🌐 IP sources",        f"{ucounts['ip_src']:,}")
-c3.metric("🎯 IP destinations",   f"{ucounts['ip_dst']:,}")
-c4.metric("🔌 Protocoles",        f"{ucounts['protocol']:,}")
-c5.metric("🚫 Trafic bloqué",     f"{blocked_ratio(df):.1f} %")
+with c1:
+    neon_metric("📦 Flux total",       f"{len(df):,}")
+with c2:
+    neon_metric("🌐 IP sources",       f"{ucounts['ip_src']:,}", color="var(--accent3)")
+with c3:
+    neon_metric("🎯 IP destinations",  f"{ucounts['ip_dst']:,}", color="var(--accent3)")
+with c4:
+    neon_metric("🔌 Protocoles",       f"{ucounts['protocol']:,}", color="var(--accent4)")
+with c5:
+    neon_metric("🚫 Trafic bloqué",    f"{blocked_ratio(df):.1f} %", color="var(--accent2)")
 
 (tab_desc, tab_table, tab_ip, tab_stats) = st.tabs(
     ["📊 Analyse descriptive", "📋 DataTable", "🌐 Visualisation IP", "📈 Statistiques"]
