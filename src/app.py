@@ -3,6 +3,7 @@ import streamlit as st
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
 from components.ui import neon_metric
+from components.data_source_selector import render_motherduck_table_selector
 from app_config import APP_ICON, APP_TITLE, LAYOUT
 from modules.preprocessing import load_data
 from modules.stats import blocked_ratio, unique_counts
@@ -18,11 +19,12 @@ apply_sentinel_theme()
 
 
 @st.cache_data
-def get_data():
-    return load_data()
+def get_data(selected_table: str | None):
+    return load_data(selected_table=selected_table)
 
 
-df = get_data()
+selected_table = render_motherduck_table_selector()
+df = get_data(selected_table)
 ucounts = unique_counts(df)
 
 st.title(f"{APP_ICON} {APP_TITLE}")

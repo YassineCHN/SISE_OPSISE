@@ -5,6 +5,7 @@ from modules.preprocessing import (
     filter_by_protocol,
     filter_by_action,
     filter_by_port_range,
+    get_data_source_info,
 )
 from app_config import PORT_RANGES
 
@@ -22,6 +23,20 @@ def render_sidebar_filters(df: pd.DataFrame) -> tuple:
         protocols, actions, port_range).
     """
     st.sidebar.markdown("### ⚙️ Filtres")
+    st.sidebar.markdown("---")
+    source_info = get_data_source_info()
+    source_label = "MotherDuck" if source_info.get("active_source") == "motherduck" else "Parquet local"
+    st.sidebar.markdown("### 🗄️ Source des données")
+    st.sidebar.caption(f"Source active : **{source_label}**")
+    if source_info.get("active_source") == "motherduck":
+        db = source_info.get("motherduck_database", "")
+        table = source_info.get("motherduck_table", "")
+        if db and table:
+            st.sidebar.caption(f"Table : `{db}.{table}`")
+        elif table:
+            st.sidebar.caption(f"Table : `{table}`")
+    if source_info.get("fallback_used"):
+        st.sidebar.warning("Fallback activé : lecture parquet local.")
     st.sidebar.markdown("---")
 
     # ── Plage de dates ─────────────────────────────────────────────────────

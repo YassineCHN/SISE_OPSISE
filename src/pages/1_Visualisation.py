@@ -9,6 +9,7 @@ import streamlit as st
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
 from components.ui import neon_metric
+from components.data_source_selector import render_motherduck_table_selector
 from app_config import ACTION_COLORS, COLUMN_LABELS, TOP_N_DEFAULT
 from modules.charts import area_chart, bar_chart, heatmap, pie_chart
 from modules.components.filters import render_sidebar_filters
@@ -36,11 +37,12 @@ apply_sentinel_theme()
 
 
 @st.cache_data
-def get_data():
-    return load_data()
+def get_data(selected_table: str | None):
+    return load_data(selected_table=selected_table)
 
 
-df_full = get_data()
+selected_table = render_motherduck_table_selector()
+df_full = get_data(selected_table)
 df, _params = render_sidebar_filters(df_full)
 
 st.title("📊 Visualisation unifiée")

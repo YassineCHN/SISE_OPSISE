@@ -39,10 +39,10 @@ def unique_counts(df: pd.DataFrame) -> dict:
 
 
 def blocked_ratio(df: pd.DataFrame) -> float:
-    """Pourcentage de trafic bloqué (DROP ou REJECT)."""
+    """Pourcentage de trafic bloqué (DENY, DROP ou REJECT)."""
     if len(df) == 0:
         return 0.0
-    blocked = df["action"].isin(["DROP", "REJECT"]).sum()
+    blocked = df["action"].isin(["DENY", "DROP", "REJECT"]).sum()
     return blocked / len(df) * 100
 
 

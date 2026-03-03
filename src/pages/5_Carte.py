@@ -10,10 +10,11 @@ import pydeck as pdk
 import time
 from datetime import datetime
 
-from modules.preprocessing import load_data
+from modules.preprocessing import load_data, get_data_source_info
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
 from components.ui import neon_metric
+from components.data_source_selector import render_motherduck_table_selector
 from utils import (
     port_label,
     is_public,
@@ -37,6 +38,7 @@ render_top_nav("map")
 # CSS — Thème clair, coloré, premium
 # ═══════════════════════════════════════════════════════════════
 apply_sentinel_theme()
+selected_table = render_motherduck_table_selector()
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -98,6 +100,20 @@ st.markdown(
 with st.sidebar:
     st.markdown("### ⚙️ Configuration")
     st.markdown("---")
+    source_info = get_data_source_info()
+    source_label = "MotherDuck" if source_info.get("active_source") == "motherduck" else "Parquet local"
+    st.markdown("### 🗄️ Source des données")
+    st.caption(f"Source active : **{source_label}**")
+    if source_info.get("active_source") == "motherduck":
+        db = source_info.get("motherduck_database", "")
+        table = selected_table or source_info.get("motherduck_table", "")
+        if db and table:
+            st.caption(f"Table : `{db}.{table}`")
+        elif table:
+            st.caption(f"Table : `{table}`")
+    if source_info.get("fallback_used"):
+        st.warning("Fallback activé : lecture parquet local.")
+    st.markdown("---")
 
     uploaded = st.file_uploader("📂 Charger un autre CSV", type=["csv"])
     st.caption("Par défaut : **df_1000.csv** chargé automatiquement")
@@ -149,14 +165,14 @@ with st.sidebar:
 # CHARGEMENT DONNÉES
 # ═══════════════════════════════════════════════════════════════
 @st.cache_data
-def get_data() -> pd.DataFrame:
-    return load_data()
+def get_data(selected_table: str | None) -> pd.DataFrame:
+    return load_data(selected_table=selected_table)
 
 
 if uploaded:
     df_raw = pd.read_csv(uploaded)
 else:
-    df_raw = get_data().copy()
+    df_raw = get_data(selected_table).copy()
 
 if filter_action:
     df_raw = df_raw[df_raw["action"].isin(filter_action)]

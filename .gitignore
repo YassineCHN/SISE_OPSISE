@@ -2,6 +2,5 @@ data_logs/
 __pycache__/
 **/*.pyc
 .env
-.env.*
 ca.pem
 .claude

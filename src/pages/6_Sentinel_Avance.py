@@ -22,7 +22,7 @@ from sklearn.preprocessing import StandardScaler, label_binarize
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 
-from modules.preprocessing import load_data as load_parquet_data
+from modules.preprocessing import load_data as load_parquet_data, get_data_source_info
 from sentinel_utils import (
     MISTRAL_API_KEY_ENV, MISTRAL_MODEL_ENV,
     port_label, is_public, geolocate_ips, arrow_angle,
@@ -31,6 +31,7 @@ from sentinel_llm_analyst import generate_analysis
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
 from components.ui import neon_metric
+from components.data_source_selector import render_motherduck_table_selector
 
 # ═══════════════════════════════════════════════════════════════
 # PAGE CONFIG
@@ -44,6 +45,7 @@ st.set_page_config(
 
 render_top_nav("sentinel")
 apply_sentinel_theme()
+selected_table = render_motherduck_table_selector()
 
 # ═══════════════════════════════════════════════════════════════
 # HELPERS UI
@@ -149,6 +151,21 @@ st.markdown(f"""
 with st.sidebar:
     st.markdown("### ⚙️ Configuration")
     st.markdown("---")
+    source_info = get_data_source_info()
+    source_label = "MotherDuck" if source_info.get("active_source") == "motherduck" else "Parquet local"
+    st.markdown("### 🗄️ Source des données")
+    st.caption(f"Source active : **{source_label}**")
+    if source_info.get("active_source") == "motherduck":
+        db = source_info.get("motherduck_database", "")
+        table = selected_table or source_info.get("motherduck_table", "")
+        if db and table:
+            st.caption(f"Table : `{db}.{table}`")
+        elif table:
+            st.caption(f"Table : `{table}`")
+    if source_info.get("fallback_used"):
+        st.warning("Fallback activé : lecture parquet local.")
+    st.markdown("---")
+
     uploaded = st.file_uploader("📂 Charger un CSV", type=["csv"])
     st.caption("Par défaut : **df_1000.csv**")
     st.markdown("---")
@@ -233,7 +250,7 @@ else:
         df_raw = load_csv(str(local))
     else:
         st.info("df_1000.csv introuvable, chargement automatique du parquet src.")
-        df_raw = load_parquet_data().copy()
+        df_raw = load_parquet_data(selected_table=selected_table).copy()
 
 if "datetime" in df_raw.columns:
     df_raw["datetime"] = pd.to_datetime(df_raw["datetime"], errors="coerce")
