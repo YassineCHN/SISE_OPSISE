@@ -119,8 +119,13 @@ def _train_random_forest(ipf: pd.DataFrame):
         "nb_connexions", "nb_ports_distincts", "nb_ips_dst",
         "ratio_deny", "nb_ports_sensibles", "activite_nuit", "port_dst_std",
     ]
-    X = ipf[FEATURES]
-    y = ipf["profil"]
+    # Filtrer les classes avec moins de 2 membres (incompatibles avec le split)
+    class_counts = ipf["profil"].value_counts()
+    valid_classes = class_counts[class_counts >= 2].index
+    ipf_valid = ipf[ipf["profil"].isin(valid_classes)]
+
+    X = ipf_valid[FEATURES]
+    y = ipf_valid["profil"]
     if y.nunique() < 2:
         return None
     X_tr, X_te, y_tr, y_te = train_test_split(
@@ -798,6 +803,14 @@ with tab_classif:
                 </span></div>""",
                 unsafe_allow_html=True,
             )
+
+            if acc >= 0.99:
+                st.info(
+                    "ℹ️ **Accuracy proche de 100 % — comportement attendu.** "
+                    "Les labels `profil` sont construits par des règles déterministes sur les mêmes features (ex: `nb_ports_distincts > 100 → Port Scan`). "
+                    "Le Random Forest re-apprend ces règles exactes → scores parfaits. "
+                    "Cela illustre la mécanique de la classification, pas une performance réelle sur des données inconnues."
+                )
 
             c1, c2, c3 = st.columns(3)
             c1.markdown(
