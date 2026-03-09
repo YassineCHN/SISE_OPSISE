@@ -112,16 +112,51 @@ def render_ai_panel(key: str, label: str, generate_fn, requires_key=True):
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+@st.cache_data(show_spinner=False)
+def _train_random_forest(ipf: pd.DataFrame):
+    """Entraîne un Random Forest sur les features IP. Résultat mis en cache."""
+    FEATURES = [
+        "nb_connexions", "nb_ports_distincts", "nb_ips_dst",
+        "ratio_deny", "nb_ports_sensibles", "activite_nuit", "port_dst_std",
+    ]
+    X = ipf[FEATURES]
+    y = ipf["profil"]
+    if y.nunique() < 2:
+        return None
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=0.25, random_state=42, stratify=y
+    )
+    rf = RandomForestClassifier(
+        n_estimators=200, max_depth=15, min_samples_leaf=5,
+        class_weight="balanced", random_state=42, n_jobs=-1,
+    )
+    rf.fit(X_tr, y_tr)
+    y_pred = rf.predict(X_te)
+    classes = rf.classes_
+    cv_scores = cross_val_score(rf, X, y, cv=5, scoring="accuracy", n_jobs=-1)
+    cm = confusion_matrix(y_te, y_pred, labels=classes)
+    imp_df = (
+        pd.DataFrame({"feature": FEATURES, "importance": rf.feature_importances_})
+        .sort_values("importance", ascending=False)
+    )
+    rep_dict = classification_report(y_te, y_pred, output_dict=True)
+    try:
+        yb = label_binarize(y_te, classes=classes)
+        ys = rf.predict_proba(X_te)
+        roc_data = [
+            (cls, *roc_curve(yb[:, i], ys[:, i])[:2], auc(*roc_curve(yb[:, i], ys[:, i])[:2]))
+            for i, cls in enumerate(classes)
+        ]
+    except Exception:
+        roc_data = None
+    return {"rep": rep_dict, "cm": cm, "classes": classes, "imp_df": imp_df, "cv": cv_scores, "roc": roc_data}
+
+
 # ═══════════════════════════════════════════════════════════════
 # SESSION STATE
 # ═══════════════════════════════════════════════════════════════
 defaults = {
     "ip_features": None,
-    "rf_report": None,
-    "rf_cm": None,
-    "rf_importance": None,
-    "rf_roc": None,
-    "rf_cv": None,
     "ts_data": None,
     "ts_pics": None,
 }
@@ -185,14 +220,6 @@ with st.sidebar:
         st.warning("Fallback activé : lecture parquet local.")
     st.markdown("---")
 
-    filter_action = st.multiselect(
-        "🎯 Action", ["DENY", "PERMIT"], default=["DENY", "PERMIT"]
-    )
-    filter_protocol = st.multiselect(
-        "📡 Protocole", ["TCP", "UDP", "ICMP"], default=["TCP", "UDP", "ICMP"]
-    )
-    max_rows = st.slider("🔢 Flux à analyser", 50, 1000, 200, step=50)
-    st.markdown("---")
 
     if st.button("🗑 Réinitialiser tout"):
         for k in list(st.session_state.keys()):
@@ -213,7 +240,7 @@ with st.sidebar:
         )
         mistral_key = mistral_key.strip().strip('"').strip("'")
 
-    _models = ["mistral-small-latest", "mistral-medium-latest", "mistral-large-latest"]
+    _models = ["mistral-small-latest", "mistral-medium-latest"]
     _def = _models.index(MISTRAL_MODEL_ENV) if MISTRAL_MODEL_ENV in _models else 0
     mistral_model = st.selectbox("🧠 Modèle", _models, index=_def)
 
@@ -251,12 +278,6 @@ with st.sidebar:
 
 df_raw = load_parquet_data(selected_table=selected_table).copy()
 
-df_filt = df_raw.copy()
-if filter_action:
-    df_filt = df_filt[df_filt["action"].isin(filter_action)]
-if filter_protocol and "protocol_clean" in df_filt.columns:
-    df_filt = df_filt[df_filt["protocol_clean"].isin(filter_protocol)]
-df = df_filt.head(max_rows).reset_index(drop=True)
 
 # ═══════════════════════════════════════════════════════════════
 # KPI STRIP — cards custom
@@ -738,75 +759,45 @@ with tab_classif:
 
     ipf = st.session_state.ip_features
     if ipf is None:
-        st.info(
-            "💡 Lancez d'abord **Détection d'anomalies** pour générer les features."
+        st.info("💡 Lancez d'abord **Détection d'anomalies** pour générer les features IP.")
+        st.markdown(
+            """<div style='background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);
+            border-radius:10px;padding:20px 24px;margin-top:16px;font-size:.82rem;color:#94a3b8;line-height:1.7;'>
+            <b style='color:#00d4ff;'>Comment fonctionne cette étape ?</b><br><br>
+            Une fois la détection d'anomalies lancée, chaque IP source est représentée par
+            <b style='color:#c8d8e8;'>7 features comportementales</b> (volume de connexions, diversité des ports,
+            ratio DENY, activité nocturne…). Un <b style='color:#c8d8e8;'>Random Forest à 200 arbres</b>
+            apprend à distinguer automatiquement les profils d'attaque (Port Scan, DDoS, Attaque ciblée, etc.).<br><br>
+            Les résultats — matrice de confusion, courbes ROC, importance des features — permettent d'évaluer
+            la <b style='color:#00ff9d;'>fiabilité opérationnelle</b> du classificateur sur vos données.
+            </div>""",
+            unsafe_allow_html=True,
         )
     else:
-        if st.button("🤖 Entraîner le Random Forest"):
-            with st.spinner("Entraînement en cours…"):
-                FEATURES = [
-                    "nb_connexions",
-                    "nb_ports_distincts",
-                    "nb_ips_dst",
-                    "ratio_deny",
-                    "nb_ports_sensibles",
-                    "activite_nuit",
-                    "port_dst_std",
-                ]
-                X = ipf[FEATURES]
-                y = ipf["profil"]
-                if y.nunique() < 2:
-                    st.warning("Pas assez de classes.")
-                    st.stop()
-                X_tr, X_te, y_tr, y_te = train_test_split(
-                    X, y, test_size=0.25, random_state=42, stratify=y
-                )
-                rf = RandomForestClassifier(
-                    n_estimators=200,
-                    max_depth=15,
-                    min_samples_leaf=5,
-                    class_weight="balanced",
-                    random_state=42,
-                    n_jobs=-1,
-                )
-                rf.fit(X_tr, y_tr)
-                y_pred = rf.predict(X_te)
-                classes = rf.classes_
-                cv_scores = cross_val_score(
-                    rf, X, y, cv=5, scoring="accuracy", n_jobs=-1
-                )
-                cm = confusion_matrix(y_te, y_pred, labels=classes)
-                imp_df = pd.DataFrame(
-                    {"feature": FEATURES, "importance": rf.feature_importances_}
-                ).sort_values("importance", ascending=False)
-                rep_dict = classification_report(y_te, y_pred, output_dict=True)
-                # ROC
-                try:
-                    yb = label_binarize(y_te, classes=classes)
-                    ys = rf.predict_proba(X_te)
-                    roc_data = [
-                        (
-                            cls,
-                            *roc_curve(yb[:, i], ys[:, i])[:2],
-                            auc(*roc_curve(yb[:, i], ys[:, i])[:2]),
-                        )
-                        for i, cls in enumerate(classes)
-                    ]
-                    st.session_state.rf_roc = roc_data
-                except:
-                    st.session_state.rf_roc = None
-                st.session_state.rf_report = rep_dict
-                st.session_state.rf_cm = (cm, classes)
-                st.session_state.rf_importance = imp_df
-                st.session_state.rf_cv = cv_scores
-            st.success(f"✅ Entraîné — Accuracy : {rep_dict.get('accuracy',0):.1%}")
+        with st.spinner("Entraînement Random Forest en cours… (mis en cache)"):
+            result = _train_random_forest(ipf)
 
-        if st.session_state.rf_report is not None:
-            rep = st.session_state.rf_report
-            cm, cls = st.session_state.rf_cm
-            imp_df = st.session_state.rf_importance
-            cv = st.session_state.rf_cv
+        if result is None:
+            st.warning("⚠️ Pas assez de classes distinctes pour entraîner le modèle.")
+        else:
+            rep = result["rep"]
+            cm, cls = result["cm"], result["classes"]
+            imp_df = result["imp_df"]
+            cv = result["cv"]
             acc = rep.get("accuracy", 0)
+
+            st.markdown(
+                f"""<div style='background:rgba(0,255,157,.06);border:1px solid rgba(0,255,157,.2);
+                border-radius:10px;padding:16px 20px;margin-bottom:20px;font-size:.8rem;color:#94a3b8;line-height:1.6;'>
+                <b style='color:#00ff9d;'>✅ Modèle entraîné automatiquement</b> &nbsp;·&nbsp;
+                Random Forest 200 arbres &nbsp;·&nbsp; Split 75 % train / 25 % test &nbsp;·&nbsp;
+                Validation croisée 5-fold &nbsp;·&nbsp;
+                <b style='color:#c8d8e8;'>{len(ipf):,} IPs</b> · <b style='color:#c8d8e8;'>{len(cls)} classes</b><br>
+                <span style='color:#4a6072;font-size:.72rem;'>
+                Les résultats sont déterministes (random_state=42) et mis en cache — aucun recalcul à chaque visite.
+                </span></div>""",
+                unsafe_allow_html=True,
+            )
 
             c1, c2, c3 = st.columns(3)
             c1.markdown(
@@ -823,6 +814,23 @@ with tab_classif:
                 unsafe_allow_html=True,
             )
 
+            st.markdown(
+                """<div style='background:rgba(162,89,255,.06);border:1px solid rgba(162,89,255,.2);
+                border-radius:10px;padding:16px 20px;margin:16px 0;font-size:.8rem;color:#94a3b8;line-height:1.7;'>
+                <b style='color:#a259ff;'>📐 Méthodologie</b><br>
+                Les 7 features comportementales sont calculées par agrégation sur chaque IP source :
+                <b style='color:#c8d8e8;'>nb_connexions</b> (volume total),
+                <b style='color:#c8d8e8;'>nb_ports_distincts</b> (diversité des ports ciblés),
+                <b style='color:#c8d8e8;'>nb_ips_dst</b> (spread réseau),
+                <b style='color:#c8d8e8;'>ratio_deny</b> (taux de blocage),
+                <b style='color:#c8d8e8;'>nb_ports_sensibles</b> (ports critiques : 21, 22, 23, 3306),
+                <b style='color:#c8d8e8;'>activite_nuit</b> (proportion 0h–6h),
+                <b style='color:#c8d8e8;'>port_dst_std</b> (variance des ports).
+                Le label cible est le <b style='color:#c8d8e8;'>profil d'attaque</b> assigné par Isolation Forest.
+                </div>""",
+                unsafe_allow_html=True,
+            )
+
             st.markdown("<br>", unsafe_allow_html=True)
             col_cm, col_feat = st.columns(2, gap="large")
             with col_cm:
@@ -830,6 +838,7 @@ with tab_classif:
                     "<div class='section-hd'>Matrice de confusion</div>",
                     unsafe_allow_html=True,
                 )
+                st.caption("Chaque cellule indique combien d'IPs du profil réel (ligne) ont été classées dans le profil prédit (colonne). La diagonale = bonnes prédictions.")
                 fig_cm = px.imshow(
                     cm,
                     x=list(cls),
@@ -859,6 +868,7 @@ with tab_classif:
                     "<div class='section-hd'>Importance des features (Gini)</div>",
                     unsafe_allow_html=True,
                 )
+                st.caption("Score d'importance Gini : contribution moyenne de chaque feature à la réduction d'impureté dans les 200 arbres. Plus le score est élevé, plus la feature est discriminante.")
                 colors_f = [
                     "#ff3c6e" if i == 0 else "#00d4ff" for i in range(len(imp_df))
                 ]
@@ -887,15 +897,16 @@ with tab_classif:
                 st.plotly_chart(fig_fi, use_container_width=True)
 
             # ROC
-            if st.session_state.rf_roc:
+            if result["roc"]:
                 st.markdown(
                     "<div class='section-hd'>Courbes ROC (one-vs-rest)</div>",
                     unsafe_allow_html=True,
                 )
+                st.caption("Chaque courbe mesure la capacité du modèle à détecter un profil (TPR) sans générer de fausses alarmes (FPR). AUC = 1.0 → classification parfaite · AUC = 0.5 → aléatoire.")
                 cr = ["#ff3c6e", "#00d4ff", "#00ff9d", "#ffb800", "#a259ff", "#ff6b6b"]
                 fig_r = go.Figure()
                 for i, (c_name, fpr, tpr, roc_auc) in enumerate(
-                    st.session_state.rf_roc
+                    result["roc"]
                 ):
                     fig_r.add_trace(
                         go.Scatter(
@@ -930,6 +941,7 @@ with tab_classif:
                 "<div class='section-hd'>Rapport de classification par classe</div>",
                 unsafe_allow_html=True,
             )
+            st.caption("Précision = parmi les IPs classées dans ce profil, combien le sont vraiment · Rappel = parmi les vraies IPs de ce profil, combien sont détectées · F1 = moyenne harmonique (score vert > 0.8, orange > 0.5, rouge ≤ 0.5).")
             rows_m = ""
             for c_name in cls:
                 d = rep.get(c_name, {})
