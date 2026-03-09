@@ -2,34 +2,46 @@ import streamlit as st
 
 from modules.preprocessing import get_data_source_info
 
+_LOCAL_TABLES = ["original_data", "generated_data"]
+_LOCAL_LABELS = {
+    "original_data":  "original_data (parquet)",
+    "generated_data": "generated_data (csv)",
+}
+
 
 def render_motherduck_table_selector() -> str | None:
     """
-    Render a sidebar selector when source is MotherDuck.
-    Returns selected table name, or None for non-MotherDuck sources.
+    Render a sidebar dataset selector.
+    - MotherDuck mode : shows available MotherDuck tables.
+    - Local mode      : shows the two local files as selectable datasets.
+    Returns the selected table/dataset name.
     """
     info = get_data_source_info()
     configured = info.get("configured_source", "parquet")
-    if configured != "motherduck":
-        return None
 
-    options = info.get("available_tables", [])
-    if not options:
-        # No options declared: fallback to configured table from env.
-        return info.get("motherduck_table") or None
-
-    default_table = info.get("motherduck_table")
-    if default_table in options:
-        default_idx = options.index(default_table)
+    if configured == "motherduck":
+        options = info.get("available_tables", [])
+        if not options:
+            return info.get("motherduck_table") or None
+        default_table = info.get("motherduck_table")
+        default_idx = options.index(default_table) if default_table in options else 0
+        st.sidebar.markdown("### 🧩 Table MotherDuck")
+        selected = st.sidebar.selectbox(
+            "Jeu de données",
+            options,
+            index=default_idx,
+            key="motherduck_table_selected",
+        )
     else:
-        default_idx = 0
+        st.sidebar.markdown("### 🗂️ Jeu de données local")
+        labels = [_LOCAL_LABELS[t] for t in _LOCAL_TABLES]
+        selected_label = st.sidebar.selectbox(
+            "Fichier source",
+            labels,
+            index=0,
+            key="local_table_selected",
+        )
+        selected = _LOCAL_TABLES[labels.index(selected_label)]
 
-    st.sidebar.markdown("### 🧩 Table MotherDuck")
-    selected = st.sidebar.selectbox(
-        "Jeu de donnees",
-        options,
-        index=default_idx,
-        key="motherduck_table_selected",
-    )
     st.sidebar.markdown("---")
     return selected

@@ -14,7 +14,7 @@ def render_top_nav(active: str) -> None:
     items = [
         ("home",     "app.py",                       "🏠 Accueil"),
         ("viz",      "pages/1_Visualisation.py",     "📊 Visualisation"),
-        ("map",      "pages/5_Carte.py",              "🌍 Carte"),
+        ("map",      "pages/2_Carte.py",              "🌍 Carte"),
         ("sentinel", "pages/3_Sentinel_Avance.py",   "🛡️ Sentinel"),
     ]
 

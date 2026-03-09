@@ -104,32 +104,6 @@ st.markdown(
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("### ⚙️ Configuration")
-    st.markdown("---")
-
-    source_info = get_data_source_info()
-    source_label = (
-        "MotherDuck"
-        if source_info.get("active_source") == "motherduck"
-        else "Parquet local"
-    )
-    st.markdown("### 🗄️ Source des données")
-    st.caption(f"Source active : **{source_label}**")
-    if source_info.get("active_source") == "motherduck":
-        db = source_info.get("motherduck_database", "")
-        table = selected_table or source_info.get("motherduck_table", "")
-        if db and table:
-            st.caption(f"Table : `{db}.{table}`")
-        elif table:
-            st.caption(f"Table : `{table}`")
-    if source_info.get("fallback_used"):
-        st.warning("Fallback activé : lecture parquet local.")
-    st.markdown("---")
-
-    uploaded = st.file_uploader("📂 Charger un autre CSV", type=["csv"])
-    st.caption("Par défaut : données MotherDuck ou parquet local")
-    st.markdown("---")
-
     filter_action = st.multiselect(
         "🎯 Action", ["DENY", "PERMIT"], default=["DENY", "PERMIT"]
     )
@@ -173,10 +147,7 @@ def get_data(table: str | None) -> pd.DataFrame:
     return load_data(selected_table=table)
 
 
-if uploaded:
-    df_raw = pd.read_csv(uploaded)
-else:
-    df_raw = get_data(table=selected_table).copy()
+df_raw = get_data(table=selected_table).copy()
 
 if filter_action:
     df_raw = df_raw[df_raw["action"].isin(filter_action)]
@@ -228,14 +199,22 @@ _ip_concat = pd.concat([df["ip_src"].dropna().astype(str), df["ip_dst"].dropna()
 _pub_freq = _ip_concat[_ip_concat.map(is_public)].value_counts()
 n_unique_pub = len(_pub_freq)
 
+if n_unique_pub == 0:
+    st.warning(
+        "⚠️ **Aucune IP publique détectée dans ce jeu de données.** "
+        "La géolocalisation nécessite des IPs publiques (non RFC1918). "
+        "Le jeu `generated_data` contient uniquement des IPs privées — utilisez `original_data` pour afficher la carte."
+    )
+
 geo_col1, geo_col2, geo_col3 = st.columns([2, 1, 1])
 with geo_col1:
     geo_n = st.slider(
         "Limite d'IPs publiques à géolocaliser",
         min_value=10,
         max_value=200,
-        value=min(100, max(10, n_unique_pub)),
+        value=min(100, max(10, n_unique_pub)) if n_unique_pub > 0 else 10,
         step=10,
+        disabled=(n_unique_pub == 0),
         help="Seules les IPs publiques (non RFC1918) sont géolocalisables. Les N plus fréquentes sont interrogées via ip-api.com.",
     )
     st.caption(
@@ -245,7 +224,7 @@ with geo_col2:
     st.metric("IPs en cache", f"{len(st.session_state.geo_cache):,}")
 with geo_col3:
     st.markdown("<br>", unsafe_allow_html=True)
-    run_geo = st.button("🔍 Géolocaliser & Afficher la carte")
+    run_geo = st.button("🔍 Géolocaliser & Afficher la carte", disabled=(n_unique_pub == 0))
 
 # ═══════════════════════════════════════════════════════════════
 # LOGIQUE GÉOLOCALISATION
@@ -695,29 +674,36 @@ with feed_col:
         permit_n = len(logs) - deny_n
         st.markdown(
             f"""<div style='display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;'>
-          <span class='badge badge-deny'>🚫 {deny_n}</span>
-          <span class='badge badge-permit'>✅ {permit_n}</span></div>""",
+          <span style='background:rgba(255,60,110,.15);border:1px solid #ff3c6e;color:#ff3c6e;
+            padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:700;'>
+            🚫 DENY {deny_n}</span>
+          <span style='background:rgba(0,255,157,.12);border:1px solid #00ff9d;color:#00ff9d;
+            padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:700;'>
+            ✅ PERMIT {permit_n}</span></div>""",
             unsafe_allow_html=True,
         )
-        html = "<div style='max-height:500px;overflow-y:auto;padding-right:4px;'>"
+        html = "<div style='max-height:480px;overflow-y:auto;padding-right:4px;'>"
         for f in logs:
-            cls = "feed-deny" if f["action"] == "DENY" else "feed-permit"
-            tag = "tag-deny" if f["action"] == "DENY" else "tag-permit"
-            ico = "🔴" if f["action"] == "DENY" else "🟢"
-            html += f"""<div class='feed-card {cls}'>
-              <span class='{tag}'>{ico} {f['action']}</span><br>
-              <span class='ip-src'>{f['src_ip']}</span>
-              <span style='color:#cbd5e1;'> ──▶ </span>
-              <span class='ip-dst'>{f['dst_ip']}</span><br>
-              <span class='geo-txt'>📍 {f['src_city'][:13]}, {f['src_country'][:11]}</span><br>
-              <span class='geo-txt'>🎯 {f['dst_city'][:13]}, {f['dst_country'][:11]}</span><br>
-              <span style='color:#94a3b8;font-size:.62rem;'>{f['protocol']} :{f['port']}</span>
+            is_deny = f["action"] == "DENY"
+            accent = "#ff3c6e" if is_deny else "#00ff9d"
+            border = "rgba(255,60,110,.35)" if is_deny else "rgba(0,255,157,.25)"
+            bg = "rgba(255,60,110,.07)" if is_deny else "rgba(0,255,157,.05)"
+            ico = "🔴" if is_deny else "🟢"
+            html += f"""<div style='background:{bg};border:1px solid {border};
+              border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:.78rem;'>
+              <span style='color:{accent};font-weight:700;'>{ico} {f['action']}</span><br>
+              <span style='color:#00d4ff;font-weight:600;'>{f['src_ip']}</span>
+              <span style='color:#475569;'> ──▶ </span>
+              <span style='color:#a259ff;font-weight:600;'>{f['dst_ip']}</span><br>
+              <span style='color:#94a3b8;'>📍 {f['src_city'][:13]}, {f['src_country'][:11]}</span><br>
+              <span style='color:#94a3b8;'>🎯 {f['dst_city'][:13]}, {f['dst_country'][:11]}</span><br>
+              <span style='color:#475569;font-size:.65rem;'>{f['protocol']} :{f['port']}</span>
             </div>"""
         html += "</div>"
         st.markdown(html, unsafe_allow_html=True)
     else:
         st.markdown(
-            """<div style='background:var(--bg2);border:2px dashed var(--border);
+            """<div style='background:rgba(15,23,42,.6);border:2px dashed rgba(0,212,255,.25);
             border-radius:12px;text-align:center;padding:40px 16px;'>
           <div style='font-size:2rem;margin-bottom:8px;'>📡</div>
           <div style='color:#94a3b8;font-size:.8rem;font-weight:500;'>En attente…</div>
