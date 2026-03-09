@@ -4,3 +4,7 @@ __pycache__/
 .env
 ca.pem
 .claude
+
+.venv/
+*.pyc
+.env
