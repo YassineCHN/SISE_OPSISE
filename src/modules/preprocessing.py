@@ -14,8 +14,16 @@ ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 if ENV_PATH.exists():
     load_dotenv(dotenv_path=ENV_PATH, override=False)
 
-# Local parquet source
-DATA_PATH = Path("data/processed/log_clean.parquet")
+# Local fallback files (absolute paths relative to this file's location)
+_SRC_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH   = _SRC_DIR / "data" / "original_data.parquet"              # original_data
+FUSION_PATH = _SRC_DIR / "data" / "processed" / "generated_data.csv"   # generated_data
+
+# Table → local file mapping
+_TABLE_TO_LOCAL: dict[str, Path] = {
+    "original_data":  DATA_PATH,
+    "generated_data": FUSION_PATH,
+}
 
 # MotherDuck config env vars
 DATA_SOURCE_ENV = "DATA_SOURCE"
@@ -75,8 +83,24 @@ def get_available_motherduck_tables() -> list[str]:
     return items
 
 
-def _load_from_parquet() -> pd.DataFrame:
-    return pd.read_parquet(DATA_PATH)
+def _load_from_local(selected_table: str | None = None) -> pd.DataFrame:
+    """
+    Charge les données locales selon la table demandée.
+    Cascade : fichier mappé → original_data.parquet → generated_data.csv.
+    """
+    # Determine the preferred local file for this table
+    preferred = _TABLE_TO_LOCAL.get(selected_table or "", DATA_PATH)
+
+    for path in [preferred, DATA_PATH, FUSION_PATH]:
+        if path.exists():
+            if path.suffix == ".parquet":
+                return pd.read_parquet(path)
+            else:
+                return pd.read_csv(path)
+
+    raise FileNotFoundError(
+        f"Aucun fichier local trouvé. Vérifié : {DATA_PATH}, {FUSION_PATH}"
+    )
 
 
 def _qualify_table(table: str, database: str) -> str:
@@ -134,15 +158,15 @@ def load_data(selected_table: str | None = None) -> pd.DataFrame:
             _LAST_LOAD_INFO["motherduck_table"] = selected_table.strip() if selected_table else _LAST_LOAD_INFO["motherduck_table"]
         except Exception as exc:
             if _env_bool(MD_FALLBACK_ENV, default=True):
-                df = _load_from_parquet()
-                _LAST_LOAD_INFO["active_source"] = "parquet"
+                df = _load_from_local(selected_table=selected_table)
+                _LAST_LOAD_INFO["active_source"] = "local"
                 _LAST_LOAD_INFO["fallback_used"] = True
                 _LAST_LOAD_INFO["error"] = str(exc)
             else:
                 raise RuntimeError(f"MotherDuck loading failed: {exc}") from exc
     else:
-        df = _load_from_parquet()
-        _LAST_LOAD_INFO["active_source"] = "parquet"
+        df = _load_from_local(selected_table=selected_table)
+        _LAST_LOAD_INFO["active_source"] = "local"
 
     df = clean_columns(df)
     df = optimize_types(df)

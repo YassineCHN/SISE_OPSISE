@@ -15,7 +15,7 @@ def render_top_nav(active: str) -> None:
         ("home",     "app.py",                       "🏠 Accueil"),
         ("viz",      "pages/1_Visualisation.py",     "📊 Visualisation"),
         ("map",      "pages/5_Carte.py",              "🌍 Carte"),
-        ("sentinel", "pages/6_Sentinel_Avance.py",   "🛡️ Sentinel"),
+        ("sentinel", "pages/3_Sentinel_Avance.py",   "🛡️ Sentinel"),
     ]
 
     cols = st.columns(len(items))

@@ -23,7 +23,7 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 
 from modules.preprocessing import load_data as load_parquet_data, get_data_source_info
-from sentinel_utils import (
+from utils.sentinel_utils import (
     MISTRAL_API_KEY_ENV,
     MISTRAL_MODEL_ENV,
     port_label,
@@ -31,7 +31,7 @@ from sentinel_utils import (
     geolocate_ips,
     arrow_angle,
 )
-from sentinel_llm_analyst import generate_analysis
+from utils.sentinel_llm_analyst import generate_analysis
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
 from components.data_source_selector import render_motherduck_table_selector
@@ -233,17 +233,16 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🤖 Mistral AI")
     if MISTRAL_API_KEY_ENV:
-        st.success("✅ Clé .env détectée")
+        st.success("✅ Clé API configurée (.env)")
+        mistral_key = MISTRAL_API_KEY_ENV
     else:
         st.info("💡 Sans clé : rapports de secours activés")
-
-    mistral_key = st.text_input(
-        "🔑 Clé API Mistral",
-        value=MISTRAL_API_KEY_ENV,
-        type="password",
-        help="Laissez vide pour utiliser les rapports de secours intégrés",
-    )
-    mistral_key = mistral_key.strip().strip('"').strip("'")
+        mistral_key = st.text_input(
+            "🔑 Clé API Mistral",
+            type="password",
+            help="Laissez vide pour utiliser les rapports de secours intégrés",
+        )
+        mistral_key = mistral_key.strip().strip('"').strip("'")
 
     _models = ["mistral-small-latest", "mistral-medium-latest", "mistral-large-latest"]
     _def = _models.index(MISTRAL_MODEL_ENV) if MISTRAL_MODEL_ENV in _models else 0

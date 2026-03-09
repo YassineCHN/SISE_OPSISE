@@ -1,6 +1,6 @@
 from pathlib import Path
 
-DATA_PATH = Path("data/processed/log_clean.parquet")
+DATA_PATH = Path(__file__).resolve().parent / "data" / "original_data.parquet"
 
 APP_TITLE = "SISE — Analyse des logs Firewall"
 APP_ICON = "🛡️"

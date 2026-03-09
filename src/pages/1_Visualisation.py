@@ -12,7 +12,7 @@ from components.ui import neon_metric
 from components.data_source_selector import render_motherduck_table_selector
 from app_config import ACTION_COLORS, COLUMN_LABELS, TOP_N_DEFAULT
 from modules.charts import area_chart, bar_chart, heatmap, pie_chart
-from modules.components.filters import render_sidebar_filters
+from modules.filters import render_sidebar_filters
 from modules.preprocessing import load_data
 from modules.stats import (
     action_distribution,
