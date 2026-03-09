@@ -14,6 +14,7 @@ st.set_page_config(
     page_title=APP_TITLE,
     page_icon=APP_ICON,
     layout=LAYOUT,
+    initial_sidebar_state="collapsed",
 )
 
 render_top_nav("home")
@@ -387,6 +388,39 @@ st.markdown("""
   </div>
 </div>
 """, unsafe_allow_html=True)
+
+# ── À propos des sources de données ──────────────────────────────────────────
+st.markdown("---")
+st.markdown("<div class='section-hd'>À propos des sources de données (choix dans la sidebar)</div>", unsafe_allow_html=True)
+_sc1, _sc2 = st.columns(2, gap="large")
+with _sc1:
+    st.markdown("""
+    <div style='background:#0d1117;border:1px solid #1e2a38;border-top:2px solid #00ff9d;
+    border-radius:8px;padding:20px 22px;font-size:.8rem;color:#94a3b8;line-height:1.7;'>
+    <div style='color:#00ff9d;font-weight:700;font-size:.72rem;letter-spacing:1px;
+    text-transform:uppercase;margin-bottom:10px;'>🟢 original_data — Logs firewall cloud</div>
+    <b style='color:#c8d8e8;'>Source :</b> Firewall Iptables déployé sur un environnement cloud réel<br>
+    <b style='color:#c8d8e8;'>Volume :</b> <span style='color:#00ff9d;font-weight:700;'>~4,5 millions de flux</span><br>
+    <b style='color:#c8d8e8;'>Colonnes :</b> datetime · ip_src · ip_dst · port_dst · protocol · action · rule_id · interface<br>
+    <b style='color:#c8d8e8;'>Actions :</b> <span style='color:#ff3c6e;'>DENY</span> · <span style='color:#00ff9d;'>PERMIT</span><br>
+    <b style='color:#c8d8e8;'>IPs :</b> Publiques et privées — géolocalisation disponible sur la page Carte<br>
+    <b style='color:#c8d8e8;'>Usage :</b> Analyse volumétrique, carte géographique, détection d'anomalies
+    </div>
+    """, unsafe_allow_html=True)
+with _sc2:
+    st.markdown("""
+    <div style='background:#0d1117;border:1px solid #1e2a38;border-top:2px solid #00d4ff;
+    border-radius:8px;padding:20px 22px;font-size:.8rem;color:#94a3b8;line-height:1.7;'>
+    <div style='color:#00d4ff;font-weight:700;font-size:.72rem;letter-spacing:1px;
+    text-transform:uppercase;margin-bottom:10px;'>🔵 generated_data — Firewall On-Premise (lab OPSIE)</div>
+    <b style='color:#c8d8e8;'>Source :</b> Firewall Iptables On-Premise déployé sous Docker par les étudiants OPSIE<br>
+    <b style='color:#c8d8e8;'>Volume :</b> <span style='color:#00d4ff;font-weight:700;'>~15 000 flux</span> (~45 min de simulation)<br>
+    <b style='color:#c8d8e8;'>Trafic :</b> Connexions légitimes + attaques simulées (port scan TCP, DDoS SYN flood, brute force FTP, scans Nikto/ZAP…)<br>
+    <b style='color:#c8d8e8;'>Colonnes :</b> datetime · ip_src · ip_dst · port_src · port_dst · protocol · action · rule_id · interface_in · interface_out<br>
+    <b style='color:#c8d8e8;'>IPs :</b> Adresses privées (RFC1918) — <span style='color:#ffb800;'>géolocalisation non disponible</span><br>
+    <b style='color:#c8d8e8;'>Usage :</b> Détection d'intrusions, analyse comportementale, ML
+    </div>
+    """, unsafe_allow_html=True)
 
 # ── Explorateur de données ────────────────────────────────────────────────────
 st.markdown("---")

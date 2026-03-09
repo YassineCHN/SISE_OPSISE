@@ -104,30 +104,35 @@ st.markdown(
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════
 with st.sidebar:
+    st.markdown("### 🎛 Filtres de données")
     filter_action = st.multiselect(
-        "🎯 Action", ["DENY", "PERMIT"], default=["DENY", "PERMIT"]
+        "🎯 Action", ["DENY", "PERMIT"], default=["DENY", "PERMIT"],
+        help="Filtre les flux avant analyse. Affecte les KPIs, les arcs et le flux en direct."
     )
     filter_protocol = st.multiselect(
-        "📡 Protocole", ["TCP", "UDP", "ICMP"], default=["TCP", "UDP", "ICMP"]
+        "📡 Protocole", ["TCP", "UDP", "ICMP"], default=["TCP", "UDP", "ICMP"],
+        help="Filtre par protocole réseau."
     )
-    max_rows = st.slider("🔢 Flux à analyser", 50, 20000, 200, step=50)
+    max_rows = st.slider(
+        "🔢 Flux à analyser (échantillon)",
+        50, 20000, 5000, step=50,
+        help="Limite le nombre de lignes chargées avant géolocalisation. "
+             "Valeur élevée = plus d'arcs sur la carte mais traitement plus lent."
+    )
+    st.caption(f"Échantillon : **{max_rows:,}** flux sur l'ensemble du jeu de données")
     st.markdown("---")
 
-    show_arrows = st.checkbox("▶ Flèches directionnelles", value=True)
-    show_trips = st.checkbox("✨ Particules animées", value=False)
+    st.markdown("### 🗺 Affichage carte")
+    show_arrows = st.checkbox("▶ Flèches directionnelles", value=True,
+        help="Affiche des flèches à mi-arc pour indiquer le sens src→dst.")
+    show_trips = st.checkbox("✨ Particules animées", value=False,
+        help="Superpose une couche de particules animées sur les arcs (plus gourmand en ressources).")
     st.markdown("---")
 
     if st.button("🗑 Réinitialiser la carte"):
         for k in (
-            "arc_df",
-            "arrow_df",
-            "scatter_df",
-            "detail_df",
-            "top_src_df",
-            "ip_geo_df",
-            "flow_log",
-            "country_src",
-            "country_dst",
+            "arc_df", "arrow_df", "scatter_df", "detail_df",
+            "top_src_df", "ip_geo_df", "flow_log", "country_src", "country_dst",
         ):
             st.session_state[k] = None if k != "flow_log" else []
         st.session_state.geo_count = 0
@@ -136,7 +141,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("**API :** [ip-api.com](http://ip-api.com)")
-    st.caption("Gratuit · 100 IP/requête · Mise en cache activée")
+    st.caption("Gratuit · 45 req/min · 100 IP/requête · Cache session activé")
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -198,6 +203,31 @@ st.markdown(
 _ip_concat = pd.concat([df["ip_src"].dropna().astype(str), df["ip_dst"].dropna().astype(str)])
 _pub_freq = _ip_concat[_ip_concat.map(is_public)].value_counts()
 n_unique_pub = len(_pub_freq)
+
+with st.expander("ℹ️ Comment utiliser cette carte ?", expanded=False):
+    st.markdown("""
+**Étapes pour afficher la carte :**
+
+1. **Choisissez la source de données** via le sélecteur en haut de page
+   — `original_data` contient des IPs publiques géolocalisables · `generated_data` ne contient que des IPs privées (carte indisponible)
+
+2. **Filtrez (optionnel)** dans la sidebar : action (DENY/PERMIT), protocole, taille de l'échantillon
+   — Le slider **"Flux à analyser"** limite les lignes chargées avant géolocalisation (performances)
+
+3. **Réglez la limite d'IPs à géolocaliser** avec le slider ci-dessous
+   — Seules les **IPs publiques** (non RFC1918) sont géolocalisables via [ip-api.com](http://ip-api.com)
+   — Le slider sélectionne les **N IPs les plus fréquentes** parmi celles disponibles
+   — Limite gratuite : **45 requêtes/min**, **100 IPs par batch**
+
+4. **Cliquez sur "Géolocaliser & Afficher"**
+   — Les résultats sont **mis en cache** pour la session : pas de re-requête si les mêmes IPs sont déjà résolues
+   — Pour vider le cache et les arcs, utilisez **"Réinitialiser la carte"** dans la sidebar
+
+**Lecture de la carte :**
+- 🔴 Arcs rouges = flux **DENY** (bloqués) · 🟢 Arcs verts = flux **PERMIT** (autorisés)
+- Chaque arc relie une IP source à une IP destination géolocalisées
+- Le **flux en direct** (colonne droite) liste les connexions affichées avec leur géographie
+    """)
 
 if n_unique_pub == 0:
     st.warning(

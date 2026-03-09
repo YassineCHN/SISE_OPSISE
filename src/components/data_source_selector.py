@@ -9,6 +9,40 @@ _LOCAL_LABELS = {
 }
 
 
+def render_inline_table_selector() -> str | None:
+    """
+    Render the dataset selector inline (main content area, not sidebar).
+    Uses the same session_state keys as render_motherduck_table_selector()
+    so the selection persists across all pages.
+    """
+    info = get_data_source_info()
+    configured = info.get("configured_source", "parquet")
+
+    if configured == "motherduck":
+        options = info.get("available_tables", [])
+        if not options:
+            return info.get("motherduck_table") or None
+        default_table = info.get("motherduck_table")
+        default_idx = options.index(default_table) if default_table in options else 0
+        selected = st.selectbox(
+            "🧩 Table MotherDuck",
+            options,
+            index=default_idx,
+            key="motherduck_table_selected",
+        )
+    else:
+        labels = [_LOCAL_LABELS[t] for t in _LOCAL_TABLES]
+        selected_label = st.selectbox(
+            "📂 Source de données",
+            labels,
+            index=0,
+            key="local_table_selected",
+        )
+        selected = _LOCAL_TABLES[labels.index(selected_label)]
+
+    return selected
+
+
 def render_motherduck_table_selector() -> str | None:
     """
     Render a sidebar dataset selector.
