@@ -381,7 +381,7 @@ if run_geo:
     st.session_state.arrow_df = arrow_df_b
     st.session_state.scatter_df = scat_df_b
     st.session_state.geo_count = len(geo)
-    st.session_state.flow_log = flow_log
+    st.session_state.flow_log = flow_log[:100]
 
     if ip_rows:
         ip_geo = pd.DataFrame(ip_rows)
@@ -582,7 +582,7 @@ with map_col:
                     },
                 },
             ),
-            use_container_width=True,
+            width="stretch",
         )
 
         # Légende riche
@@ -712,14 +712,15 @@ with feed_col:
             ✅ PERMIT {permit_n}</span></div>""",
             unsafe_allow_html=True,
         )
-        html = "<div style='max-height:480px;overflow-y:auto;padding-right:4px;'>"
+        feed_container = st.container(height=480, border=False)
         for f in logs:
             is_deny = f["action"] == "DENY"
             accent = "#ff3c6e" if is_deny else "#00ff9d"
             border = "rgba(255,60,110,.35)" if is_deny else "rgba(0,255,157,.25)"
             bg = "rgba(255,60,110,.07)" if is_deny else "rgba(0,255,157,.05)"
             ico = "🔴" if is_deny else "🟢"
-            html += f"""<div style='background:{bg};border:1px solid {border};
+            feed_container.markdown(
+                f"""<div style='background:{bg};border:1px solid {border};
               border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:.78rem;'>
               <span style='color:{accent};font-weight:700;'>{ico} {f['action']}</span><br>
               <span style='color:#00d4ff;font-weight:600;'>{f['src_ip']}</span>
@@ -728,9 +729,9 @@ with feed_col:
               <span style='color:#94a3b8;'>📍 {f['src_city'][:13]}, {f['src_country'][:11]}</span><br>
               <span style='color:#94a3b8;'>🎯 {f['dst_city'][:13]}, {f['dst_country'][:11]}</span><br>
               <span style='color:#475569;font-size:.65rem;'>{f['protocol']} :{f['port']}</span>
-            </div>"""
-        html += "</div>"
-        st.markdown(html, unsafe_allow_html=True)
+            </div>""",
+                unsafe_allow_html=True,
+            )
     else:
         st.markdown(
             """<div style='background:rgba(15,23,42,.6);border:2px dashed rgba(0,212,255,.25);
@@ -762,7 +763,7 @@ if st.session_state.top_src_df is not None:
         )
         st.dataframe(
             st.session_state.top_src_df.style.applymap(color_action, subset=["action"]),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=320,
         )
@@ -779,7 +780,7 @@ if st.session_state.top_src_df is not None:
                 st.session_state.detail_df.style.applymap(
                     color_action, subset=["Action"]
                 ),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=320,
             )
@@ -809,7 +810,7 @@ if st.session_state.ip_geo_df is not None:
                 paper_bgcolor="rgba(0,0,0,0)",
                 font_color="#cbd5e1",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     with col_c2:
         dst_geo = geo_df[geo_df["Rôle"].isin(["Destination", "Source & Dest."])]
@@ -821,7 +822,7 @@ if st.session_state.ip_geo_df is not None:
                 paper_bgcolor="rgba(0,0,0,0)",
                 font_color="#cbd5e1",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     with col_c3:
         fig = px.scatter(
@@ -843,7 +844,7 @@ if st.session_state.ip_geo_df is not None:
             font_color="#cbd5e1",
             margin=dict(l=0, r=0, t=40, b=0),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Tableau IP enrichi
     st.markdown("---")
@@ -853,7 +854,7 @@ if st.session_state.ip_geo_df is not None:
     )
     st.dataframe(
         geo_df.drop(columns=["Lat", "Lon"]),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         height=240,
     )

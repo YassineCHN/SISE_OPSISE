@@ -25,7 +25,7 @@ def render_top_nav(active: str) -> None:
                 page,
                 label=(f"[{label}]" if key == active else label),
                 disabled=(key == active),
-                use_container_width=True,
+                width="stretch",
             )
 
     st.markdown("---")

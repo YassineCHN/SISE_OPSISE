@@ -76,12 +76,12 @@ with tab_desc:
         act_df = action_distribution(df)
         st.plotly_chart(
             pie_chart(act_df, names="action", color_map=ACTION_COLORS),
-            use_container_width=True,
+            width="stretch",
         )
     with cb:
         st.subheader(f"🔌 Top {TOP_N_DEFAULT} protocoles")
         proto_df = top_n(df, "protocol", TOP_N_DEFAULT)
-        st.plotly_chart(bar_chart(proto_df, x="protocol"), use_container_width=True)
+        st.plotly_chart(bar_chart(proto_df, x="protocol"), width="stretch")
 
     st.subheader("📈 Volume de trafic dans le temps")
     freq_map = {"Heure": "h", "Jour": "D", "Semaine": "W"}
@@ -89,13 +89,13 @@ with tab_desc:
     timeline_df = traffic_by_period(df, freq=freq_map[freq_label])
     st.plotly_chart(
         area_chart(timeline_df, x="datetime", y="count", title=f"Trafic par {freq_label.lower()}"),
-        use_container_width=True,
+        width="stretch",
     )
 
     st.subheader(f"🔢 Top {TOP_N_DEFAULT} ports destination")
     ports_df = top_n(df, "port_dst", TOP_N_DEFAULT)
     ports_df["port_dst"] = ports_df["port_dst"].astype(str)
-    st.plotly_chart(bar_chart(ports_df, x="port_dst"), use_container_width=True)
+    st.plotly_chart(bar_chart(ports_df, x="port_dst"), width="stretch")
 
 with tab_table:
     st.subheader("📋 Table de données")
@@ -117,7 +117,7 @@ with tab_table:
 
     start = (page - 1) * page_size
     end = start + page_size
-    st.dataframe(display_df.iloc[start:end], use_container_width=True, height=600)
+    st.dataframe(display_df.iloc[start:end], width="stretch", height=600)
     st.caption(f"📄 Page {page}/{total_pages} · {total_rows:,} lignes au total")
 
     csv = display_df.to_csv(index=False).encode("utf-8")
@@ -136,11 +136,11 @@ with tab_ip:
     with ia:
         st.subheader(f"⬆️ Top {n} IP sources")
         src_df = top_n(df, "ip_src", n)
-        st.plotly_chart(bar_chart(src_df, x="ip_src", horizontal=True), use_container_width=True)
+        st.plotly_chart(bar_chart(src_df, x="ip_src", horizontal=True), width="stretch")
     with ib:
         st.subheader(f"⬇️ Top {n} IP destinations")
         dst_df = top_n(df, "ip_dst", n)
-        st.plotly_chart(bar_chart(dst_df, x="ip_dst", horizontal=True), use_container_width=True)
+        st.plotly_chart(bar_chart(dst_df, x="ip_dst", horizontal=True), width="stretch")
 
     st.subheader("🎯 Distribution des actions — Top IP sources")
     top_src_ips = top_n(df, "ip_src", 10)["ip_src"].tolist()
@@ -155,34 +155,34 @@ with tab_ip:
         color_discrete_map=ACTION_COLORS,
         labels={"ip_src": "IP Source", "count": "Événements", "action": "Action"},
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     ic, id_ = st.columns(2)
     with ic:
         st.subheader("🔀 Interfaces d'entrée")
         iface_in = top_n(df, "interface_in", 10)
-        st.plotly_chart(pie_chart(iface_in, names="interface_in", title="Interface entrée"), use_container_width=True)
+        st.plotly_chart(pie_chart(iface_in, names="interface_in", title="Interface entrée"), width="stretch")
     with id_:
         st.subheader("🔀 Interfaces de sortie")
         iface_out = top_n(df, "interface_out", 10)
-        st.plotly_chart(pie_chart(iface_out, names="interface_out", title="Interface sortie"), use_container_width=True)
+        st.plotly_chart(pie_chart(iface_out, names="interface_out", title="Interface sortie"), width="stretch")
 
 with tab_stats:
     st.subheader("🔥 Protocole × Action")
     ct = protocol_action_crosstab(df)
-    st.plotly_chart(heatmap(ct), use_container_width=True)
+    st.plotly_chart(heatmap(ct), width="stretch")
 
     sa, sb = st.columns(2)
     with sa:
         st.subheader(f"📋 Top {TOP_N_DEFAULT} règles déclenchées")
         rules_df = top_n(df, "rule_id", TOP_N_DEFAULT)
         rules_df["rule_id"] = "Règle " + rules_df["rule_id"].astype(str)
-        st.plotly_chart(bar_chart(rules_df, x="rule_id"), use_container_width=True)
+        st.plotly_chart(bar_chart(rules_df, x="rule_id"), width="stretch")
     with sb:
         st.subheader("🔢 Distribution des plages de ports")
         port_cat_df = port_category_distribution(df)
         port_label_col = port_cat_df.columns[0]
-        st.plotly_chart(pie_chart(port_cat_df, names=port_label_col), use_container_width=True)
+        st.plotly_chart(pie_chart(port_cat_df, names=port_label_col), width="stretch")
 
     sc, sd = st.columns(2)
     with sc:
@@ -196,7 +196,7 @@ with tab_stats:
             color_discrete_sequence=["#00d4ff"],
         )
         fig_h.update_xaxes(dtick=1, title="Heure")
-        st.plotly_chart(fig_h, use_container_width=True)
+        st.plotly_chart(fig_h, width="stretch")
     with sd:
         st.subheader("📅 Trafic par jour de la semaine")
         weekly = traffic_by_weekday(df)
@@ -207,4 +207,4 @@ with tab_stats:
             labels={"jour": "Jour", "count": "Événements"},
             color_discrete_sequence=["#a259ff"],
         )
-        st.plotly_chart(fig_w, use_container_width=True)
+        st.plotly_chart(fig_w, width="stretch")

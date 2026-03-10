@@ -278,7 +278,7 @@ with st.sidebar:
     _def = _models.index(MISTRAL_MODEL_ENV) if MISTRAL_MODEL_ENV in _models else 0
     mistral_model = st.selectbox("🧠 Modèle", _models, index=_def)
 
-    if st.button("🔍 Tester la clé API", use_container_width=True):
+    if st.button("🔍 Tester la clé API", width="stretch"):
         if not mistral_key:
             st.warning("⚠️ Aucune clé fournie.")
         else:
@@ -634,7 +634,7 @@ with tab_anomaly:
                 xaxis=dict(gridcolor="#1e2a38", title="Nb connexions (log)"),
                 yaxis=dict(gridcolor="#1e2a38", title="Ports distincts"),
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         with v2:
             st.markdown(
                 "<div class='section-hd'>Profils comportementaux</div>",
@@ -665,7 +665,7 @@ with tab_anomaly:
                 xaxis=dict(gridcolor="#1e2a38"),
                 yaxis=dict(gridcolor="#1e2a38"),
             )
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width="stretch")
 
         # Distribution score anomalie
         st.markdown(
@@ -691,7 +691,7 @@ with tab_anomaly:
             yaxis=dict(gridcolor="#1e2a38"),
             margin=dict(t=0, b=0, l=0, r=0),
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
         # Top suspects table
         st.markdown(
@@ -938,7 +938,7 @@ with tab_classif:
                     margin=dict(t=0, b=40, l=0, r=0),
                     coloraxis_showscale=False,
                 )
-                st.plotly_chart(fig_cm, use_container_width=True)
+                st.plotly_chart(fig_cm, width="stretch")
             with col_feat:
                 st.markdown(
                     "<div class='section-hd'>Importance des features (Gini)</div>",
@@ -972,7 +972,7 @@ with tab_classif:
                     yaxis=dict(gridcolor="#1e2a38"),
                     margin=dict(t=0, b=0, l=0, r=60),
                 )
-                st.plotly_chart(fig_fi, use_container_width=True)
+                st.plotly_chart(fig_fi, width="stretch")
 
             # ROC
             if result["roc"]:
@@ -1023,7 +1023,7 @@ with tab_classif:
                     yaxis=dict(gridcolor="#1e2a38", title="TPR"),
                     margin=dict(t=0, b=0, l=0, r=0),
                 )
-                st.plotly_chart(fig_r, use_container_width=True)
+                st.plotly_chart(fig_r, width="stretch")
 
             # Métriques par classe
             st.markdown(
@@ -1271,7 +1271,7 @@ with tab_temporal:
                     height=280,
                     margin=dict(t=30, b=0, l=0, r=0),
                 )
-                st.plotly_chart(fig_hm, use_container_width=True)
+                st.plotly_chart(fig_hm, width="stretch")
             with hm2:
                 fig_hm2 = go.Figure(
                     go.Heatmap(
@@ -1289,7 +1289,7 @@ with tab_temporal:
                     height=280,
                     margin=dict(t=30, b=0, l=0, r=0),
                 )
-                st.plotly_chart(fig_hm2, use_container_width=True)
+                st.plotly_chart(fig_hm2, width="stretch")
 
             # Séries temporelles
             st.markdown(
@@ -1337,7 +1337,7 @@ with tab_temporal:
             for i in [1, 2]:
                 fig_ts.update_xaxes(gridcolor="#1e2a38", row=i, col=1)
                 fig_ts.update_yaxes(gridcolor="#1e2a38", row=i, col=1)
-            st.plotly_chart(fig_ts, use_container_width=True)
+            st.plotly_chart(fig_ts, width="stretch")
 
             # Z-score
             st.markdown(
@@ -1385,7 +1385,7 @@ with tab_temporal:
                 yaxis=dict(gridcolor="#1e2a38"),
                 margin=dict(t=0, b=0, l=0, r=0),
             )
-            st.plotly_chart(fig_z, use_container_width=True)
+            st.plotly_chart(fig_z, width="stretch")
 
             # Profils horaires
             if ts["hourly_profil"] is not None:
@@ -1419,7 +1419,7 @@ with tab_temporal:
                     yaxis=dict(gridcolor="#1e2a38"),
                     margin=dict(t=0, b=0, l=0, r=0),
                 )
-                st.plotly_chart(fig_p, use_container_width=True)
+                st.plotly_chart(fig_p, width="stretch")
 
             if n_pics > 0:
                 st.markdown(
@@ -1436,7 +1436,7 @@ with tab_temporal:
                         }
                     )
                     .style.format({"Z-score": "{:.3f}", "Nb connexions": "{:,}"}),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=260,
                 )
@@ -1607,7 +1607,7 @@ with tab_behavior:
                 xaxis=dict(gridcolor="#1e2a38", title="Nb connexions (log)"),
                 yaxis=dict(gridcolor="#1e2a38", title="Ports distincts"),
             )
-            st.plotly_chart(fig_s1, use_container_width=True)
+            st.plotly_chart(fig_s1, width="stretch")
 
         with sc2:
             st.markdown(
@@ -1637,7 +1637,7 @@ with tab_behavior:
                 ),
                 yaxis=dict(gridcolor="#1e2a38", title="Ratio DENY", tickformat=".0%"),
             )
-            st.plotly_chart(fig_s2, use_container_width=True)
+            st.plotly_chart(fig_s2, width="stretch")
 
         st.markdown(
             "<div class='section-hd'>Distribution du volume de connexions par profil (log)</div>",
@@ -1661,7 +1661,7 @@ with tab_behavior:
             yaxis=dict(gridcolor="#1e2a38", title="Nb connexions (log)"),
             margin=dict(t=0, b=0, l=0, r=0),
         )
-        st.plotly_chart(fig_box, use_container_width=True)
+        st.plotly_chart(fig_box, width="stretch")
 
         # Top 5 IP sources
         st.markdown(
@@ -1799,7 +1799,7 @@ with tab_behavior:
             yaxis=dict(gridcolor="#1e2a38", title="Nb connexions"),
             margin=dict(t=0, b=40, l=0, r=0),
         )
-        st.plotly_chart(fig_dst, use_container_width=True)
+        st.plotly_chart(fig_dst, width="stretch")
 
         dc1, dc2 = st.columns([3, 2], gap="large")
         with dc1:
@@ -1839,7 +1839,7 @@ with tab_behavior:
                         "DENY": "{:,}",
                     }
                 ),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=340,
             )
@@ -1875,7 +1875,7 @@ with tab_behavior:
                     yaxis=dict(gridcolor="#1e2a38", tickfont=dict(size=9)),
                     margin=dict(t=0, b=0, l=0, r=0),
                 )
-                st.plotly_chart(fig_ext, use_container_width=True)
+                st.plotly_chart(fig_ext, width="stretch")
                 st.markdown(
                     f"""<div class='kpi-row'>
                   <span class='kpi-chip deny'>⚠️ {len(ext_src)} IPs externes détectées</span>
@@ -1967,7 +1967,7 @@ with tab_behavior:
             xaxis=dict(gridcolor="#1e2a38", title="Nb connexions (log)"),
             yaxis=dict(gridcolor="#1e2a38", title="Nb ports distincts"),
         )
-        st.plotly_chart(fig_att, use_container_width=True)
+        st.plotly_chart(fig_att, width="stretch")
 
         st.markdown(
             "<div class='section-hd'>Tableau comportemental détaillé</div>",
@@ -2007,7 +2007,7 @@ with tab_behavior:
                     "Score": "{:.4f}",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=360,
         )
@@ -2100,7 +2100,7 @@ with tab_behavior:
                     yaxis=dict(gridcolor="#1e2a38"),
                     margin=dict(t=0, b=0, l=0, r=0),
                 )
-                st.plotly_chart(fig_pp, use_container_width=True)
+                st.plotly_chart(fig_pp, width="stretch")
 
         # LLM
         att_stats = {
@@ -2190,7 +2190,7 @@ with tab_behavior:
             coloraxis_colorbar=dict(tickfont=dict(color="#c8d8e8")),
             margin=dict(t=0, b=40, l=0, r=0),
         )
-        st.plotly_chart(fig_corr, use_container_width=True)
+        st.plotly_chart(fig_corr, width="stretch")
 
         # Radar chart
         st.markdown(
@@ -2250,7 +2250,7 @@ with tab_behavior:
             legend=dict(bgcolor="rgba(0,0,0,0)", bordercolor="#1e2a38", font_size=11),
             margin=dict(t=20, b=20, l=20, r=20),
         )
-        st.plotly_chart(fig_radar, use_container_width=True)
+        st.plotly_chart(fig_radar, width="stretch")
 
         # Évolution temporelle des DENY par protocole
         if "datetime" in df_raw.columns and not df_raw["datetime"].isna().all():
@@ -2289,7 +2289,7 @@ with tab_behavior:
                     yaxis=dict(gridcolor="#1e2a38", title="Nb connexions DENY"),
                     margin=dict(t=0, b=0, l=0, r=0),
                 )
-                st.plotly_chart(fig_ev, use_container_width=True)
+                st.plotly_chart(fig_ev, width="stretch")
 
         # LLM
         corr_flat = []
@@ -2407,7 +2407,7 @@ with tab_ia:
         if preview_cols:
             st.dataframe(
                 df_deny[preview_cols].head(50),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )

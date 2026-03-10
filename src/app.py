@@ -363,7 +363,7 @@ with right_col:
         showlegend=True,
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
     )
-    st.plotly_chart(_fig_pie, use_container_width=True)
+    st.plotly_chart(_fig_pie, width="stretch")
 
     if _pcol in df.columns:
         st.markdown("<div class='section-hd'>Protocoles</div>", unsafe_allow_html=True)
@@ -390,7 +390,7 @@ with right_col:
             textposition="outside",
             textfont=dict(size=9, color="#4a6072"),
         )
-        st.plotly_chart(_fig_bar, use_container_width=True)
+        st.plotly_chart(_fig_bar, width="stretch")
 
     st.markdown(
         f"""
@@ -596,7 +596,7 @@ _start = (_page - 1) * _page_size
 _end = _start + _page_size
 st.dataframe(
     _display_df.iloc[_start:_end].reset_index(drop=True),
-    use_container_width=True,
+    width="stretch",
     hide_index=True,
     height=600,
 )
