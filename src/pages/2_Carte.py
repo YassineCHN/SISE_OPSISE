@@ -762,7 +762,7 @@ if st.session_state.top_src_df is not None:
             unsafe_allow_html=True,
         )
         st.dataframe(
-            st.session_state.top_src_df.style.applymap(color_action, subset=["action"]),
+            st.session_state.top_src_df.style.map(color_action, subset=["action"]),
             width="stretch",
             hide_index=True,
             height=320,
@@ -777,7 +777,7 @@ if st.session_state.top_src_df is not None:
             and not st.session_state.detail_df.empty
         ):
             st.dataframe(
-                st.session_state.detail_df.style.applymap(
+                st.session_state.detail_df.style.map(
                     color_action, subset=["Action"]
                 ),
                 width="stretch",

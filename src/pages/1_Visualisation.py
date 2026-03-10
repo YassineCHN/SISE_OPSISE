@@ -145,7 +145,7 @@ with tab_ip:
     st.subheader("🎯 Distribution des actions — Top IP sources")
     top_src_ips = top_n(df, "ip_src", 10)["ip_src"].tolist()
     df_top = df[df["ip_src"].isin(top_src_ips)]
-    action_by_ip = df_top.groupby(["ip_src", "action"]).size().reset_index(name="count")
+    action_by_ip = df_top.groupby(["ip_src", "action"], observed=True).size().reset_index(name="count")
     fig = px.bar(
         action_by_ip,
         x="ip_src",
