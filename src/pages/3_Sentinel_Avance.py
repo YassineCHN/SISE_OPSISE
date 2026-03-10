@@ -240,7 +240,7 @@ with st.sidebar:
     source_label = (
         "MotherDuck"
         if source_info.get("active_source") == "motherduck"
-        else "Parquet local"
+        else "Fichier local"
     )
     st.markdown("### 🗄️ Source des données")
     st.caption(f"Source active : **{source_label}**")
@@ -263,16 +263,14 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🤖 Mistral AI")
     if MISTRAL_API_KEY_ENV:
-        st.success("✅ Clé API configurée (.env)")
-        mistral_key = MISTRAL_API_KEY_ENV
-    else:
-        st.info("💡 Sans clé : rapports de secours activés")
-        mistral_key = st.text_input(
-            "🔑 Clé API Mistral",
-            type="password",
-            help="Laissez vide pour utiliser les rapports de secours intégrés",
-        )
-        mistral_key = mistral_key.strip().strip('"').strip("'")
+        st.success("✅ Clé API configurée via secrets")
+    _user_key = st.text_input(
+        "🔑 Clé API Mistral (optionnel)",
+        type="password",
+        help="Remplace la clé configurée. Laissez vide pour utiliser la clé secrets ou les rapports de secours.",
+    )
+    _user_key = _user_key.strip().strip('"').strip("'")
+    mistral_key = _user_key or MISTRAL_API_KEY_ENV or ""
 
     _models = ["mistral-small-latest", "mistral-medium-latest"]
     _def = _models.index(MISTRAL_MODEL_ENV) if MISTRAL_MODEL_ENV in _models else 0

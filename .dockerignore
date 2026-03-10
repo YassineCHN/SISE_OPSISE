@@ -1,0 +1,15 @@
+.env
+.env.local
+.venv/
+__pycache__/
+**/*.pyc
+**/*.pyo
+**/__pycache__/
+exploration/
+data_logs/
+.git/
+.gitignore
+*.md
+src/.env
+src/.env.local
+src/__pycache__/

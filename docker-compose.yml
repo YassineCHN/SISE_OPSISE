@@ -3,9 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: sisie_opsise_streamlit
+    container_name: sise_opsise_streamlit
     ports:
       - "8501:8501"
     env_file:
-      - .env
+      - src/.env
     restart: unless-stopped

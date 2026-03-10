@@ -25,7 +25,7 @@ def render_sidebar_filters(df: pd.DataFrame) -> tuple:
     st.sidebar.markdown("### ⚙️ Filtres")
     st.sidebar.markdown("---")
     source_info = get_data_source_info()
-    source_label = "MotherDuck" if source_info.get("active_source") == "motherduck" else "Parquet local"
+    source_label = "MotherDuck" if source_info.get("active_source") == "motherduck" else "Fichier local"
     st.sidebar.markdown("### 🗄️ Source des données")
     st.sidebar.caption(f"Source active : **{source_label}**")
     if source_info.get("active_source") == "motherduck":
