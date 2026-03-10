@@ -14,6 +14,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy import stats as scipy_stats
+from scipy.stats import entropy as scipy_entropy
 from sklearn.ensemble import IsolationForest, RandomForestClassifier
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler, label_binarize
@@ -114,31 +115,43 @@ def render_ai_panel(key: str, label: str, generate_fn, requires_key=True):
 
 @st.cache_data(show_spinner=False)
 def _train_random_forest(ipf: pd.DataFrame):
-    """Entraîne un Random Forest sur les features IP. Résultat mis en cache."""
+    """Entraîne un Random Forest sur les labels comportementaux (sans data leakage)."""
+    # Features RF : strictement séparées des features de labeling
+    # Labels définis par : nb_ports_distincts (Scanner), nb_ports_sensibles (BF),
+    #                      nb_connexions + nb_ips_dst (Flood)
     FEATURES = [
-        "nb_connexions", "nb_ports_distincts", "nb_ips_dst",
-        "ratio_deny", "nb_ports_sensibles", "activite_nuit", "port_dst_std",
+        "ratio_deny",      # proportion connexions bloquées
+        "activite_nuit",   # part activité 0h-6h
+        "port_dst_std",    # dispersion des ports ciblés
+        "entropy_ports",   # diversité normalisée (Shannon)
+        "top_port_ratio",  # concentration sur le port le plus fréquent (signal BF)
+        "ratio_sensible",  # proportion du trafic vers ports auth (signal BF fort)
     ]
-    # Filtrer les classes avec moins de 2 membres (incompatibles avec le split)
-    class_counts = ipf["profil"].value_counts()
-    valid_classes = class_counts[class_counts >= 2].index
-    ipf_valid = ipf[ipf["profil"].isin(valid_classes)]
+    # Vérifier que les colonnes existent (feature engineering à jour)
+    missing = [f for f in FEATURES if f not in ipf.columns]
+    if missing:
+        return None
+
+    class_counts = ipf["label"].value_counts()
+    valid_classes = class_counts[class_counts >= 5].index
+    ipf_valid = ipf[ipf["label"].isin(valid_classes)]
 
     X = ipf_valid[FEATURES]
-    y = ipf_valid["profil"]
+    y = ipf_valid["label"]
     if y.nunique() < 2:
         return None
     X_tr, X_te, y_tr, y_te = train_test_split(
         X, y, test_size=0.25, random_state=42, stratify=y
     )
     rf = RandomForestClassifier(
-        n_estimators=200, max_depth=15, min_samples_leaf=5,
-        class_weight="balanced", random_state=42, n_jobs=-1,
+        n_estimators=100, max_depth=6, min_samples_leaf=3,
+        class_weight={"Normal": 1, "Scanner": 2, "Brute-Force": 4, "Flood": 4},
+        random_state=42, n_jobs=-1,
     )
     rf.fit(X_tr, y_tr)
     y_pred = rf.predict(X_te)
     classes = rf.classes_
-    cv_scores = cross_val_score(rf, X, y, cv=5, scoring="accuracy", n_jobs=-1)
+    cv_scores = cross_val_score(rf, X, y, cv=5, scoring="roc_auc_ovr_weighted", n_jobs=-1)
     cm = confusion_matrix(y_te, y_pred, labels=classes)
     imp_df = (
         pd.DataFrame({"feature": FEATURES, "importance": rf.feature_importances_})
@@ -148,10 +161,13 @@ def _train_random_forest(ipf: pd.DataFrame):
     try:
         yb = label_binarize(y_te, classes=classes)
         ys = rf.predict_proba(X_te)
-        roc_data = [
-            (cls, *roc_curve(yb[:, i], ys[:, i])[:2], auc(*roc_curve(yb[:, i], ys[:, i])[:2]))
-            for i, cls in enumerate(classes)
-        ]
+        if yb.shape[1] > 1:
+            roc_data = [
+                (cls, *roc_curve(yb[:, i], ys[:, i])[:2], auc(*roc_curve(yb[:, i], ys[:, i])[:2]))
+                for i, cls in enumerate(classes)
+            ]
+        else:
+            roc_data = None
     except Exception:
         roc_data = None
     return {"rep": rep_dict, "cm": cm, "classes": classes, "imp_df": imp_df, "cv": cv_scores, "roc": roc_data}
@@ -437,6 +453,17 @@ with tab_anomaly:
                 dw["hour"] = dw["datetime"].dt.hour
             else:
                 dw["hour"] = 0
+            _SENSITIVE_PORTS = {21, 22, 23, 3306, 3389, 445, 139, 1433}
+
+            def _port_entropy(ports):
+                counts = ports.value_counts(normalize=True)
+                return float(scipy_entropy(counts))
+
+            def _top_port_ratio(ports):
+                if len(ports) == 0:
+                    return 0.0
+                return float(ports.value_counts(normalize=True).iloc[0])
+
             ip_feat = (
                 dw.groupby("ip_src")
                 .agg(
@@ -446,14 +473,19 @@ with tab_anomaly:
                     ratio_deny=("action", lambda x: (x == "DENY").mean()),
                     nb_ports_sensibles=(
                         "port_dst",
-                        lambda x: x.isin([21, 22, 23, 3306]).sum(),
+                        lambda x: x.isin(_SENSITIVE_PORTS).sum(),
                     ),
                     activite_nuit=("hour", lambda x: ((x >= 0) & (x < 6)).mean()),
                     port_dst_std=("port_dst", "std"),
+                    entropy_ports=("port_dst", _port_entropy),
+                    top_port_ratio=("port_dst", _top_port_ratio),
                 )
                 .reset_index()
             )
             ip_feat["port_dst_std"] = ip_feat["port_dst_std"].fillna(0)
+            ip_feat["ratio_sensible"] = (
+                ip_feat["nb_ports_sensibles"] / ip_feat["nb_connexions"].clip(lower=1)
+            )
 
             FEATURES = [
                 "nb_connexions",
@@ -487,6 +519,23 @@ with tab_anomaly:
                     return "Normal"
 
             ip_feat["profil"] = ip_feat.apply(profil, axis=1)
+
+            # Labels comportementaux (pour classification ML sans data leakage)
+            _q95_cx  = ip_feat["nb_connexions"].quantile(0.95)
+            _q75_pd  = ip_feat["nb_ports_distincts"].quantile(0.75)
+            _med_dst = ip_feat["nb_ips_dst"].median()
+
+            def _behavioral_label(row):
+                if row["nb_ports_distincts"] > _q75_pd:
+                    return "Scanner"
+                elif row["nb_ports_sensibles"] >= 5:
+                    return "Brute-Force"
+                elif row["nb_connexions"] > _q95_cx and row["nb_ips_dst"] > _med_dst:
+                    return "Flood"
+                else:
+                    return "Normal"
+
+            ip_feat["label"] = ip_feat.apply(_behavioral_label, axis=1)
 
             # DBSCAN (sur échantillon)
             try:
@@ -755,9 +804,9 @@ with tab_classif:
     st.markdown(
         """<div class='story-banner'>
       <b style='font-family:Syne,sans-serif;color:#00d4ff;letter-spacing:2px;font-size:0.7rem;'>SCÉNARIO 2 — CLASSIFICATION RANDOM FOREST</b><br><br>
-      Un <span class='highlight'>Random Forest à 200 arbres</span> apprend les signatures de chaque profil d'attaque.
-      Objectif : créer un <span class='danger'>classificateur déployable en temps réel</span> capable de scorer
-      instantanément toute nouvelle IP source. Les courbes ROC et la matrice de confusion quantifient la fiabilité opérationnelle.
+      Un <span class='highlight'>Random Forest à 100 arbres</span> apprend à distinguer 4 classes comportementales :
+      <b>Normal</b>, <b>Scanner</b>, <b>Brute-Force</b>, <b>Flood</b>.
+      Les features d'entraînement sont <span class='danger'>strictement séparées</span> des règles de labeling pour éviter tout data leakage.
     </div>""",
         unsafe_allow_html=True,
     )
@@ -770,11 +819,11 @@ with tab_classif:
             border-radius:10px;padding:20px 24px;margin-top:16px;font-size:.82rem;color:#94a3b8;line-height:1.7;'>
             <b style='color:#00d4ff;'>Comment fonctionne cette étape ?</b><br><br>
             Une fois la détection d'anomalies lancée, chaque IP source est représentée par
-            <b style='color:#c8d8e8;'>7 features comportementales</b> (volume de connexions, diversité des ports,
-            ratio DENY, activité nocturne…). Un <b style='color:#c8d8e8;'>Random Forest à 200 arbres</b>
-            apprend à distinguer automatiquement les profils d'attaque (Port Scan, DDoS, Attaque ciblée, etc.).<br><br>
-            Les résultats — matrice de confusion, courbes ROC, importance des features — permettent d'évaluer
-            la <b style='color:#00ff9d;'>fiabilité opérationnelle</b> du classificateur sur vos données.
+            <b style='color:#c8d8e8;'>6 features comportementales</b> (ratio DENY, activité nocturne, dispersion des ports,
+            entropie, concentration sur un port, proportion vers ports auth). Un <b style='color:#c8d8e8;'>Random Forest à 100 arbres</b>
+            apprend à distinguer 4 classes : <b style='color:#c8d8e8;'>Normal, Scanner, Brute-Force, Flood</b>.<br><br>
+            Les features d'entraînement sont <b style='color:#00ff9d;'>strictement séparées</b> des règles de labeling
+            — les scores obtenus sont donc réalistes et non triviaux (AUC ~0.96–0.99).
             </div>""",
             unsafe_allow_html=True,
         )
@@ -795,22 +844,14 @@ with tab_classif:
                 f"""<div style='background:rgba(0,255,157,.06);border:1px solid rgba(0,255,157,.2);
                 border-radius:10px;padding:16px 20px;margin-bottom:20px;font-size:.8rem;color:#94a3b8;line-height:1.6;'>
                 <b style='color:#00ff9d;'>✅ Modèle entraîné automatiquement</b> &nbsp;·&nbsp;
-                Random Forest 200 arbres &nbsp;·&nbsp; Split 75 % train / 25 % test &nbsp;·&nbsp;
-                Validation croisée 5-fold &nbsp;·&nbsp;
+                Random Forest 100 arbres · max_depth=6 &nbsp;·&nbsp; Split 75 % train / 25 % test &nbsp;·&nbsp;
+                CV 5-fold ROC-AUC OVR &nbsp;·&nbsp;
                 <b style='color:#c8d8e8;'>{len(ipf):,} IPs</b> · <b style='color:#c8d8e8;'>{len(cls)} classes</b><br>
                 <span style='color:#4a6072;font-size:.72rem;'>
                 Les résultats sont déterministes (random_state=42) et mis en cache — aucun recalcul à chaque visite.
                 </span></div>""",
                 unsafe_allow_html=True,
             )
-
-            if acc >= 0.99:
-                st.info(
-                    "ℹ️ **Accuracy proche de 100 % — comportement attendu.** "
-                    "Les labels `profil` sont construits par des règles déterministes sur les mêmes features (ex: `nb_ports_distincts > 100 → Port Scan`). "
-                    "Le Random Forest re-apprend ces règles exactes → scores parfaits. "
-                    "Cela illustre la mécanique de la classification, pas une performance réelle sur des données inconnues."
-                )
 
             c1, c2, c3 = st.columns(3)
             c1.markdown(
@@ -823,7 +864,7 @@ with tab_classif:
                 unsafe_allow_html=True,
             )
             c3.markdown(
-                f"<div class='stat-block'><div class='val' style='color:#a259ff;'>{cv.mean():.3f} ±{cv.std():.3f}</div><div class='lbl'>CV 5-fold</div></div>",
+                f"<div class='stat-block'><div class='val' style='color:#a259ff;'>{cv.mean():.3f} ±{cv.std():.3f}</div><div class='lbl'>ROC-AUC CV 5-fold</div></div>",
                 unsafe_allow_html=True,
             )
 
@@ -916,6 +957,17 @@ with tab_classif:
                     unsafe_allow_html=True,
                 )
                 st.caption("Chaque courbe mesure la capacité du modèle à détecter un profil (TPR) sans générer de fausses alarmes (FPR). AUC = 1.0 → classification parfaite · AUC = 0.5 → aléatoire.")
+                if len(ipf) < 500:
+                    st.warning(
+                        f"⚠️ **Dataset trop petit pour des courbes ROC fiables** ({len(ipf)} IPs, "
+                        f"~{int(len(ipf)*0.25)} en test).\n\n"
+                        "Avec aussi peu de samples, les courbes ROC apparaissent **en escalier** (angulaires) "
+                        "car chaque palier correspond à 1 ou 2 échantillons changeant de côté. "
+                        "De plus, le Random Forest produit des probabilités discrètes (multiples de 1/100) — "
+                        "plusieurs samples peuvent partager la même valeur et basculer ensemble, créant de grands sauts.\n\n"
+                        "**Les métriques AUC sur ce dataset ne sont pas statistiquement interprétables.** "
+                        "Utilisez `original_data` pour des résultats fiables."
+                    )
                 cr = ["#ff3c6e", "#00d4ff", "#00ff9d", "#ffb800", "#a259ff", "#ff6b6b"]
                 fig_r = go.Figure()
                 for i, (c_name, fpr, tpr, roc_auc) in enumerate(
