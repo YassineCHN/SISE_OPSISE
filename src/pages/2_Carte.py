@@ -17,7 +17,7 @@ from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
 from components.ui import neon_metric
 from components.data_source_selector import render_motherduck_table_selector
-from utils import (
+from utils.network_utils import (
     is_public,
     geolocate_ips,
     arrow_angle,

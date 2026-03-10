@@ -3,12 +3,10 @@ import plotly.express as px
 
 from components.top_nav import render_top_nav
 from components.sentinel_theme import apply_sentinel_theme
-from components.ui import neon_metric
 from components.data_source_selector import render_motherduck_table_selector
 from app_config import APP_ICON, APP_TITLE, COLUMN_LABELS, LAYOUT
 from modules.preprocessing import load_data
-from modules.stats import blocked_ratio, unique_counts
-from utils.sentinel_utils import port_label
+from utils.network_utils import port_label
 
 st.set_page_config(
     page_title=APP_TITLE,
@@ -30,25 +28,34 @@ selected_table = render_motherduck_table_selector()
 df = get_data(selected_table)
 
 # ── Métriques ─────────────────────────────────────────────────────────────────
-_total      = len(df)
-_deny       = int((df["action"] == "DENY").sum())
-_permit     = int((df["action"] == "PERMIT").sum())
-_src        = df["ip_src"].nunique()
-_dst        = df["ip_dst"].nunique()
-_pct_deny   = (_deny   / _total * 100) if _total else 0
+_total = len(df)
+_deny = int((df["action"] == "DENY").sum())
+_permit = int((df["action"] == "PERMIT").sum())
+_src = df["ip_src"].nunique()
+_dst = df["ip_dst"].nunique()
+_pct_deny = (_deny / _total * 100) if _total else 0
 _pct_permit = (_permit / _total * 100) if _total else 0
 
-_pcol       = "protocol_clean" if "protocol_clean" in df.columns else "protocol"
-_top_port   = int(df["port_dst"].mode()[0]) if "port_dst" in df.columns else "N/A"
+_pcol = "protocol_clean" if "protocol_clean" in df.columns else "protocol"
+_top_port = int(df["port_dst"].mode()[0]) if "port_dst" in df.columns else "N/A"
 _top_src_ip = df["ip_src"].value_counts().idxmax() if "ip_src" in df.columns else "N/A"
-_rules      = df["rule_id"].nunique() if "rule_id" in df.columns else "N/A"
+_rules = df["rule_id"].nunique() if "rule_id" in df.columns else "N/A"
 
-_date_start = df["datetime"].min().strftime("%d %b %Y") if "datetime" in df.columns else "—"
-_date_end   = df["datetime"].max().strftime("%d %b %Y") if "datetime" in df.columns else "—"
-_days       = (df["datetime"].max() - df["datetime"].min()).days if "datetime" in df.columns else 0
+_date_start = (
+    df["datetime"].min().strftime("%d %b %Y") if "datetime" in df.columns else "—"
+)
+_date_end = (
+    df["datetime"].max().strftime("%d %b %Y") if "datetime" in df.columns else "—"
+)
+_days = (
+    (df["datetime"].max() - df["datetime"].min()).days
+    if "datetime" in df.columns
+    else 0
+)
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(
+    """
 <style>
 .hero-wrap{
   background:linear-gradient(135deg,#07090f 0%,#0d1117 40%,#0f1a24 100%);
@@ -173,10 +180,13 @@ st.markdown("""
 .kpi-bar-fill{height:100%;border-radius:2px;
   background:linear-gradient(90deg,var(--kpi-color),color-mix(in srgb,var(--kpi-color) 55%,#a259ff));}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ── Hero banner ───────────────────────────────────────────────────────────────
-st.markdown(f"""
+st.markdown(
+    f"""
 <div class="hero-wrap">
   <div class="hero-tag">Threat Intelligence Platform — SISE / OPSIE 2026</div>
   <div class="hero-title">
@@ -197,10 +207,13 @@ st.markdown(f"""
     <span class="hbadge">{_days} jours d'observation</span>
   </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ── KPI strip ─────────────────────────────────────────────────────────────────
-st.markdown(f"""
+st.markdown(
+    f"""
 <div class="kpi-strip">
   <div class="kpi-card" style="--kpi-color:#00d4ff">
     <div class="kpi-icon"></div>
@@ -238,27 +251,32 @@ st.markdown(f"""
     <div class="kpi-bar-track"><div class="kpi-bar-fill" style="width:100%"></div></div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ── Storytelling + mini charts ────────────────────────────────────────────────
 left_col, right_col = st.columns([5, 4], gap="large")
 
 with left_col:
-    st.markdown("<div class='section-hd'>Chronologie de l'analyse</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='section-hd'>Chronologie de l'analyse</div>", unsafe_allow_html=True
+    )
 
     _proto_top = df[_pcol].value_counts().idxmax() if _pcol in df.columns else "TCP"
-    _proto_cnt = df[_pcol].value_counts().max()    if _pcol in df.columns else 0
+    _proto_cnt = df[_pcol].value_counts().max() if _pcol in df.columns else 0
     _port_name = port_label(_top_port)
     _deny_hour = ""
     if "datetime" in df.columns and "action" in df.columns:
-        _deny_df  = df[df["action"] == "DENY"].copy()
+        _deny_df = df[df["action"] == "DENY"].copy()
         _deny_df["hour"] = _deny_df["datetime"].dt.hour
         if not _deny_df.empty:
-            _peak_h   = int(_deny_df["hour"].value_counts().idxmax())
+            _peak_h = int(_deny_df["hour"].value_counts().idxmax())
             _peak_cnt = int(_deny_df["hour"].value_counts().max())
             _deny_hour = f"Pic d'activité hostile à <b class='hl'>{_peak_h:02d}h</b> : {_peak_cnt:,} tentatives."
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div class="timeline">
       <div class="tl-item" style="--dot-color:#00d4ff;--dot-bg:#07090f">
         <div class="tl-dot"></div>
@@ -312,41 +330,70 @@ with left_col:
         </div>
       </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 with right_col:
-    st.markdown("<div class='section-hd'>Distribution des actions</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='section-hd'>Distribution des actions</div>", unsafe_allow_html=True
+    )
     _act = df["action"].value_counts().reset_index()
     _act.columns = ["action", "count"]
     _colors = {"DENY": "#ff3c6e", "PERMIT": "#00ff9d"}
-    _fig_pie = px.pie(_act, names="action", values="count",
-                      color="action", color_discrete_map=_colors, hole=0.6)
-    _fig_pie.update_traces(textinfo="percent+label",
-                           textfont=dict(family="Space Mono", size=10),
-                           marker=dict(line=dict(color="#07090f", width=2)))
-    _fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                           font_color="#c8d8e8", height=210,
-                           margin=dict(t=0, b=0, l=0, r=0),
-                           showlegend=True,
-                           legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)))
+    _fig_pie = px.pie(
+        _act,
+        names="action",
+        values="count",
+        color="action",
+        color_discrete_map=_colors,
+        hole=0.6,
+    )
+    _fig_pie.update_traces(
+        textinfo="percent+label",
+        textfont=dict(family="Space Mono", size=10),
+        marker=dict(line=dict(color="#07090f", width=2)),
+    )
+    _fig_pie.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#c8d8e8",
+        height=210,
+        margin=dict(t=0, b=0, l=0, r=0),
+        showlegend=True,
+        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
+    )
     st.plotly_chart(_fig_pie, use_container_width=True)
 
     if _pcol in df.columns:
         st.markdown("<div class='section-hd'>Protocoles</div>", unsafe_allow_html=True)
         _prot = df[_pcol].value_counts().reset_index()
         _prot.columns = ["proto", "count"]
-        _fig_bar = px.bar(_prot, x="proto", y="count",
-                          color_discrete_sequence=["#00d4ff", "#a259ff", "#ffb800", "#ff3c6e"])
-        _fig_bar.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#0d1117",
-                               font_color="#c8d8e8", height=180, showlegend=False,
-                               margin=dict(t=0, b=0, l=0, r=0),
-                               xaxis=dict(gridcolor="#1e2a38", title=""),
-                               yaxis=dict(gridcolor="#1e2a38", title=""))
-        _fig_bar.update_traces(texttemplate="%{y:,}", textposition="outside",
-                               textfont=dict(size=9, color="#4a6072"))
+        _fig_bar = px.bar(
+            _prot,
+            x="proto",
+            y="count",
+            color_discrete_sequence=["#00d4ff", "#a259ff", "#ffb800", "#ff3c6e"],
+        )
+        _fig_bar.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#0d1117",
+            font_color="#c8d8e8",
+            height=180,
+            showlegend=False,
+            margin=dict(t=0, b=0, l=0, r=0),
+            xaxis=dict(gridcolor="#1e2a38", title=""),
+            yaxis=dict(gridcolor="#1e2a38", title=""),
+        )
+        _fig_bar.update_traces(
+            texttemplate="%{y:,}",
+            textposition="outside",
+            textfont=dict(size=9, color="#4a6072"),
+        )
         st.plotly_chart(_fig_bar, use_container_width=True)
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div class="insight-grid">
       <div class="ins-card" style="--ins-color:#ff3c6e">
         <div class="ins-num">{_pct_deny:.0f}%</div>
@@ -364,12 +411,15 @@ with right_col:
         <div class="ins-desc">{_port_name}</div>
       </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 # ── Navigation rapide ─────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown("<div class='section-hd'>Pages disponibles</div>", unsafe_allow_html=True)
-st.markdown("""
+st.markdown(
+    """
 <div class="nav-grid">
   <div class="nav-card" style="--nav-color:#00d4ff">
     <div class="nav-icon">📊</div>
@@ -387,14 +437,20 @@ st.markdown("""
     <div class="nav-desc">Détection d'anomalies ML, classification, analyse temporelle, Threat Analyst IA (Mistral).</div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ── À propos des sources de données ──────────────────────────────────────────
 st.markdown("---")
-st.markdown("<div class='section-hd'>À propos des sources de données (choix dans la sidebar)</div>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='section-hd'>À propos des sources de données (choix dans la sidebar)</div>",
+    unsafe_allow_html=True,
+)
 _sc1, _sc2 = st.columns(2, gap="large")
 with _sc1:
-    st.markdown("""
+    st.markdown(
+        """
     <div style='background:#0d1117;border:1px solid #1e2a38;border-top:2px solid #00ff9d;
     border-radius:8px;padding:20px 22px;font-size:.8rem;color:#94a3b8;line-height:1.7;'>
     <div style='color:#00ff9d;font-weight:700;font-size:.72rem;letter-spacing:1px;
@@ -406,9 +462,12 @@ with _sc1:
     <b style='color:#c8d8e8;'>IPs :</b> Publiques et privées — géolocalisation disponible sur la page Carte<br>
     <b style='color:#c8d8e8;'>Usage :</b> Analyse volumétrique, carte géographique, détection d'anomalies
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 with _sc2:
-    st.markdown("""
+    st.markdown(
+        """
     <div style='background:#0d1117;border:1px solid #1e2a38;border-top:2px solid #00d4ff;
     border-radius:8px;padding:20px 22px;font-size:.8rem;color:#94a3b8;line-height:1.7;'>
     <div style='color:#00d4ff;font-weight:700;font-size:.72rem;letter-spacing:1px;
@@ -420,31 +479,51 @@ with _sc2:
     <b style='color:#c8d8e8;'>IPs :</b> Adresses privées (RFC1918) — <span style='color:#ffb800;'>géolocalisation non disponible</span><br>
     <b style='color:#c8d8e8;'>Usage :</b> Détection d'intrusions, analyse comportementale, ML
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 # ── Explorateur de données ────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("<div class='section-hd'>Explorateur de données brutes</div>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='section-hd'>Explorateur de données brutes</div>",
+    unsafe_allow_html=True,
+)
 
 # Filtres rapides
 f1, f2, f3, f4 = st.columns([2, 2, 2, 2])
 with f1:
     _f_action = st.multiselect(
-        "Action", df["action"].unique().tolist(),
-        default=df["action"].unique().tolist(), key="home_action"
+        "Action",
+        df["action"].unique().tolist(),
+        default=df["action"].unique().tolist(),
+        key="home_action",
     )
 with f2:
-    _f_proto = st.multiselect(
-        "Protocole", df[_pcol].dropna().unique().tolist() if _pcol in df.columns else [],
-        default=df[_pcol].dropna().unique().tolist() if _pcol in df.columns else [],
-        key="home_proto"
-    ) if _pcol in df.columns else None
+    _f_proto = (
+        st.multiselect(
+            "Protocole",
+            df[_pcol].dropna().unique().tolist() if _pcol in df.columns else [],
+            default=df[_pcol].dropna().unique().tolist() if _pcol in df.columns else [],
+            key="home_proto",
+        )
+        if _pcol in df.columns
+        else None
+    )
 with f3:
-    _f_ip = st.text_input("IP source contient", placeholder="ex: 192.168", key="home_ip")
+    _f_ip = st.text_input(
+        "IP source contient", placeholder="ex: 192.168", key="home_ip"
+    )
 with f4:
     _port_min = int(df["port_dst"].min()) if "port_dst" in df.columns else 0
     _port_max = int(df["port_dst"].max()) if "port_dst" in df.columns else 65535
-    _f_port = st.slider("Port destination", _port_min, _port_max, (_port_min, _port_max), key="home_port")
+    _f_port = st.slider(
+        "Port destination",
+        _port_min,
+        _port_max,
+        (_port_min, _port_max),
+        key="home_port",
+    )
 
 # Application des filtres
 _df_table = df.copy()
@@ -453,28 +532,36 @@ if _f_action:
 if _f_proto and _pcol in _df_table.columns:
     _df_table = _df_table[_df_table[_pcol].isin(_f_proto)]
 if _f_ip.strip():
-    _df_table = _df_table[_df_table["ip_src"].astype(str).str.contains(_f_ip.strip(), na=False)]
+    _df_table = _df_table[
+        _df_table["ip_src"].astype(str).str.contains(_f_ip.strip(), na=False)
+    ]
 if "port_dst" in _df_table.columns:
     _df_table = _df_table[_df_table["port_dst"].between(_f_port[0], _f_port[1])]
 
 # Recherche full-text + sélection colonnes
 sa, sb = st.columns([3, 2])
 with sa:
-    _search = st.text_input("🔍 Recherche (IP, action, protocole...)", "", key="home_search")
+    _search = st.text_input(
+        "🔍 Recherche (IP, action, protocole...)", "", key="home_search"
+    )
 with sb:
     _all_cols = list(_df_table.rename(columns=COLUMN_LABELS).columns)
-    _sel_cols = st.multiselect("📑 Colonnes", _all_cols, default=_all_cols, key="home_cols")
+    _sel_cols = st.multiselect(
+        "📑 Colonnes", _all_cols, default=_all_cols, key="home_cols"
+    )
 
 # Appliquer la recherche full-text
 _display_df = _df_table.rename(columns=COLUMN_LABELS)
 if _search.strip():
-    _mask = _display_df.apply(lambda col: col.astype(str).str.contains(_search.strip(), case=False, na=False))
+    _mask = _display_df.apply(
+        lambda col: col.astype(str).str.contains(_search.strip(), case=False, na=False)
+    )
     _display_df = _display_df[_mask.any(axis=1)]
 if _sel_cols:
     _display_df = _display_df[_sel_cols]
 
 # Compteur + pagination
-_n_match  = len(_display_df)
+_n_match = len(_display_df)
 _n_deny_f = int((_df_table["action"] == "DENY").sum())
 _n_perm_f = int((_df_table["action"] == "PERMIT").sum())
 _page_size = 1000
@@ -482,7 +569,8 @@ _total_pages = max(1, -(-_n_match // _page_size))
 
 pc1, pc2 = st.columns([4, 1])
 with pc1:
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
       <span style="font-size:0.68rem;color:#4a6072;letter-spacing:1px;">
         <b style="color:#e8f4ff;">{_n_match:,}</b> résultats
@@ -496,12 +584,16 @@ with pc1:
         ✅ {_n_perm_f:,} PERMIT
       </span>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 with pc2:
-    _page = st.number_input("Page", min_value=1, max_value=_total_pages, value=1, step=1, key="home_page")
+    _page = st.number_input(
+        "Page", min_value=1, max_value=_total_pages, value=1, step=1, key="home_page"
+    )
 
 _start = (_page - 1) * _page_size
-_end   = _start + _page_size
+_end = _start + _page_size
 st.dataframe(
     _display_df.iloc[_start:_end].reset_index(drop=True),
     use_container_width=True,

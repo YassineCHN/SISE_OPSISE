@@ -19,10 +19,10 @@ COLUMN_LABELS = {
 }
 
 ACTION_COLORS = {
-    "ACCEPT": "#2ECC71",
-    "DROP": "#E74C3C",
-    "REJECT": "#E67E22",
-    "LOG": "#3498DB",
+    "PERMIT": "#2ECC71",
+    "DENY": "#E74C3C",
+    "None": "#4a6072",
+    "": "#4a6072",
 }
 
 COLOR_SEQUENCE = [
