@@ -4,25 +4,25 @@ Application Streamlit d'analyse de logs firewall développée dans le cadre du p
 
 ---
 
-## Fonctionnalités
+## ✨ Fonctionnalités
 
-### Accueil
+### 🏠 Accueil
 - KPIs globaux (flux total, DENY/PERMIT, sources et destinations uniques)
 - Timeline pédagogique des 6 étapes d'analyse
 - Explorateur de données brutes avec filtres, recherche et export CSV
 
-### 1 — Visualisation
+### 📊 1 — Visualisation
 - Distribution des actions, protocoles et ports
 - Top sources/destinations
 - Analyse temporelle (heatmap horaire/journalière)
 - Tableau de données filtrable
 
-### 2 — Carte
+### 🗺️ 2 — Carte
 - Géolocalisation des IPs publiques (API ip-api.com)
 - Visualisation pydeck : arcs, points, labels
 - 7 KPIs réseau (flux, trafic bloqué %, sources/destinations publiques)
 
-### 3 — Sentinel Avancé
+### 🤖 3 — Sentinel Avancé
 - Détection d'anomalies par Isolation Forest
 - Classification comportementale par Random Forest (Scanner, Brute-Force, Flood, Normal)
 - Analyse temporelle et corrélations
@@ -31,7 +31,7 @@ Application Streamlit d'analyse de logs firewall développée dans le cadre du p
 
 ---
 
-## Sources de données
+## 🗄️ Sources de données
 
 | Table | Description | Lignes |
 |-------|-------------|--------|
@@ -42,7 +42,7 @@ Colonnes communes : `datetime`, `ip_src`, `ip_dst`, `port_dst`, `protocol`, `act
 
 ---
 
-## Stack technique
+## 🧰 Stack technique
 
 - **Framework** : Streamlit
 - **Données** : DuckDB / MotherDuck, Pandas, PyArrow
@@ -53,27 +53,34 @@ Colonnes communes : `datetime`, `ip_src`, `ip_dst`, `port_dst`, `protocol`, `act
 
 ---
 
-## Installation locale
+## 🚀 Installation locale
 
 ### Prérequis
 - Python 3.10+
 - [uv](https://docs.astral.sh/uv/) (recommandé) ou pip
 
-### Avec uv
+### Avec uv _(recommandé)_
 
 ```bash
-git clone https://github.com/<org>/SISE_OPSISE.git
+git clone https://github.com/YassineCHN/SISE_OPSISE.git
 cd SISE_OPSISE
-uv sync
+uv sync                  # crée le venv et installe les dépendances automatiquement
+source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate     # Windows
 ```
 
-### Avec pip
+### Avec venv + pip
 
 ```bash
+git clone https://github.com/YassineCHN/SISE_OPSISE.git
+cd SISE_OPSISE
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate     # Windows
 pip install -r src/requirements.txt
 ```
 
-### Configuration
+### ⚙️ Configuration
 
 Créer `src/.env` à partir de l'exemple :
 
@@ -91,7 +98,7 @@ MISTRAL_API_KEY=<votre_clé>
 MISTRAL_MODEL=mistral-small-latest
 ```
 
-### Lancement
+### ▶️ Lancement
 
 ```bash
 streamlit run src/app.py
@@ -101,7 +108,7 @@ L'application est disponible sur [http://localhost:8501](http://localhost:8501).
 
 ---
 
-## Déploiement Docker
+## 🐳 Déploiement Docker
 
 ```bash
 # Build et démarrage
@@ -113,13 +120,13 @@ docker compose down
 
 > Le fichier `src/.env` est chargé automatiquement par docker-compose.
 
-### Export de l'image (livraison sans build)
+### 📦 Export de l'image (livraison sans build)
 
 ```bash
 docker save sise_opsise-streamlit -o sise_opsise.tar
 ```
 
-### Import de l'image
+### 📥 Import de l'image
 
 ```bash
 docker load -i sise_opsise.tar
@@ -130,7 +137,7 @@ docker compose up
 
 ---
 
-## Déploiement Streamlit Cloud
+## ☁️ Déploiement Streamlit Cloud
 
 1. Pusher le dépôt sur GitHub
 2. Créer une app sur [share.streamlit.io](https://share.streamlit.io) avec `src/app.py` comme point d'entrée
@@ -147,7 +154,7 @@ MISTRAL_MODEL = "mistral-small-latest"
 
 ---
 
-## Structure du projet
+## 📁 Structure du projet
 
 ```
 SISE_OPSISE/
@@ -180,9 +187,9 @@ SISE_OPSISE/
 
 ---
 
-## Notes
+## 📝 Notes
 
-- La clé Mistral peut être saisie directement dans la sidebar si elle est absente ou expirée
-- Sans clé Mistral, des rapports de secours pré-rédigés sont utilisés automatiquement
-- Les données `generated_data` ne contiennent que des IPs privées — la géolocalisation n'y est pas disponible
-- DuckDB doit être en version ≤ 1.4.4 pour la compatibilité MotherDuck
+- 🔑 La clé Mistral peut être saisie directement dans la sidebar si elle est absente ou expirée
+- 🛟 Sans clé Mistral, des rapports de secours pré-rédigés sont utilisés automatiquement
+- 🌍 Les données `generated_data` ne contiennent que des IPs privées — la géolocalisation n'y est pas disponible
+- ⚠️ DuckDB doit être en version ≤ 1.4.4 pour la compatibilité MotherDuck
