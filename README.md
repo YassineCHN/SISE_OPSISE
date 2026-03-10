@@ -169,13 +169,9 @@ SISE_OPSISE/
 
 ---
 
-## 👥 Équipe
+## 👥 Réalisation du projet
 
-Projet réalisé dans le cadre du module **OPSISE — Master SISE 2025–2026**, Université Lyon 2.
-
-| Membre | GitHub |
-|---|---|
-| **Yassine Cheniour** | [@YassineCHN](https://github.com/YassineCHN) |
+Projet réalisé dans le cadre du **ChallengeSISE-OPSIE — Master SISE 2025–2026**, Université Lyon 2.
 
 🔗 **Dépôt GitHub :** [YassineCHN/SISE_OPSISE](https://github.com/YassineCHN/SISE_OPSISE)
 
