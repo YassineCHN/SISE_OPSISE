@@ -456,7 +456,7 @@ with _sc1:
     <div style='color:#00ff9d;font-weight:700;font-size:.72rem;letter-spacing:1px;
     text-transform:uppercase;margin-bottom:10px;'>🟢 original_data — Logs firewall cloud</div>
     <b style='color:#c8d8e8;'>Source :</b> Firewall Iptables déployé sur un environnement cloud réel<br>
-    <b style='color:#c8d8e8;'>Volume :</b> <span style='color:#00ff9d;font-weight:700;'>~4,5 millions de flux</span><br>
+    <b style='color:#c8d8e8;'>Volume :</b> <span style='color:#00ff9d;font-weight:700;'>~4,5 millions de flux</span> <span style='color:#ffb800;font-size:.75rem;'>(aperçu limité à 500 000 lignes sur le cloud)</span><br>
     <b style='color:#c8d8e8;'>Colonnes :</b> datetime · ip_src · ip_dst · port_dst · protocol · action · rule_id · interface<br>
     <b style='color:#c8d8e8;'>Actions :</b> <span style='color:#ff3c6e;'>DENY</span> · <span style='color:#00ff9d;'>PERMIT</span><br>
     <b style='color:#c8d8e8;'>IPs :</b> Publiques et privées — géolocalisation disponible sur la page Carte<br>

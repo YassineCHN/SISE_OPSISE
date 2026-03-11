@@ -60,17 +60,20 @@ def render_motherduck_table_selector() -> str | None:
         if not options:
             return info.get("motherduck_table") or None
         default_table = info.get("motherduck_table")
-        default_idx = options.index(default_table) if default_table in options else 0
+        if "motherduck_table_selected" not in st.session_state:
+            st.session_state["motherduck_table_selected"] = default_table
         st.sidebar.markdown("### 🧩 Table MotherDuck")
         selected = st.sidebar.selectbox(
             "Jeu de données",
             options,
-            index=default_idx,
             key="motherduck_table_selected",
         )
         row_limit = int(os.getenv("MOTHERDUCK_ROW_LIMIT", "0"))
-        if row_limit > 0:
-            st.sidebar.caption(f"⚠️ Données limitées à {row_limit:,} lignes.")
+        if row_limit > 0 and selected == "original_data":
+            st.sidebar.caption(
+                f"⚠️ Aperçu limité à {row_limit:,} lignes sur ~4,57M "
+                f"(contrainte mémoire du cloud). Les tendances restent représentatives."
+            )
     else:
         st.sidebar.markdown("### 🗂️ Jeu de données local")
         labels = [_LOCAL_LABELS[t] for t in _LOCAL_TABLES]

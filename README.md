@@ -182,3 +182,4 @@ Projet réalisé dans le cadre du **ChallengeSISE-OPSIE — Master SISE 2025–2
 - 🌍 `generated_data` ne contient que des IPs privées — la géolocalisation n'y est pas disponible
 - ⚠️ DuckDB doit être en version ≤ 1.4.4 pour la compatibilité MotherDuck
 - 🔑 La clé Mistral peut être saisie dans la sidebar même si une clé est déjà configurée
+- ☁️ Sur Streamlit Cloud, `original_data` (~4,5 M lignes) est limité à 1 000 000 lignes pour respecter la contrainte mémoire de 1 Go. Configurer `MOTHERDUCK_ROW_LIMIT=1000000` dans les secrets. Les tendances restent représentatives. En local, aucune limite n'est appliquée.
