@@ -125,10 +125,14 @@ def _load_from_motherduck(selected_table: str | None = None) -> pd.DataFrame:
     if not table:
         raise ValueError(f"Missing env var {MD_TABLE_ENV}. Provide exactly one table name.")
 
+    row_limit = int(os.getenv("MOTHERDUCK_ROW_LIMIT", "0"))
     conn = duckdb.connect(f"md:{database}?motherduck_token={token}")
     try:
         qualified_table = _qualify_table(table, database)
-        return conn.execute(f"SELECT * FROM {qualified_table}").df()
+        query = f"SELECT * FROM {qualified_table}"
+        if row_limit > 0:
+            query += f" LIMIT {row_limit}"
+        return conn.execute(query).df()
     finally:
         conn.close()
 

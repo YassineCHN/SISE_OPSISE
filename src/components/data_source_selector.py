@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 
 from modules.preprocessing import get_data_source_info
@@ -66,6 +68,9 @@ def render_motherduck_table_selector() -> str | None:
             index=default_idx,
             key="motherduck_table_selected",
         )
+        row_limit = int(os.getenv("MOTHERDUCK_ROW_LIMIT", "0"))
+        if row_limit > 0:
+            st.sidebar.caption(f"⚠️ Données limitées à {row_limit:,} lignes.")
     else:
         st.sidebar.markdown("### 🗂️ Jeu de données local")
         labels = [_LOCAL_LABELS[t] for t in _LOCAL_TABLES]
