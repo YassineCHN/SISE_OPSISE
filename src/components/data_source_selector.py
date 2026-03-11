@@ -60,12 +60,15 @@ def render_motherduck_table_selector() -> str | None:
         if not options:
             return info.get("motherduck_table") or None
         default_table = info.get("motherduck_table")
-        if "motherduck_table_selected" not in st.session_state:
-            st.session_state["motherduck_table_selected"] = default_table
+        current = st.session_state.get("motherduck_table_selected", default_table)
+        if current not in options:
+            current = default_table
+        current_idx = options.index(current) if current in options else 0
         st.sidebar.markdown("### 🧩 Table MotherDuck")
         selected = st.sidebar.selectbox(
             "Jeu de données",
             options,
+            index=current_idx,
             key="motherduck_table_selected",
         )
         row_limit = int(os.getenv("MOTHERDUCK_ROW_LIMIT", "0"))
