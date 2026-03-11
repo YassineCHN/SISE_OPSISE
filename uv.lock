@@ -585,7 +585,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "asttokens", specifier = ">=3.0.1" },
-    { name = "duckdb", specifier = ">=0.10.0" },
+    { name = "duckdb", specifier = ">=0.10.0,<=1.4.4" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "matplotlib", specifier = ">=3.8,<4" },
     { name = "numpy", specifier = "<2" },

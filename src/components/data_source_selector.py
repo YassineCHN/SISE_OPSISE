@@ -60,7 +60,7 @@ def render_motherduck_table_selector() -> str | None:
         if not options:
             return info.get("motherduck_table") or None
         default_table = info.get("motherduck_table")
-        current = st.session_state.get("motherduck_table_selected", default_table)
+        current = st.session_state.get("_md_table_persist", default_table)
         if current not in options:
             current = default_table
         current_idx = options.index(current) if current in options else 0
@@ -71,6 +71,7 @@ def render_motherduck_table_selector() -> str | None:
             index=current_idx,
             key="motherduck_table_selected",
         )
+        st.session_state["_md_table_persist"] = selected
         row_limit = int(os.getenv("MOTHERDUCK_ROW_LIMIT", "0"))
         if row_limit > 0 and selected == "original_data":
             st.sidebar.caption(
